@@ -27,6 +27,36 @@ pub fn derive_visit_immutable(input: proc_macro::TokenStream) -> proc_macro::Tok
     })
 }
 
+/// Implementation of `[#derive(VisitExt)]`
+#[proc_macro_derive(VisitExt)]
+pub fn derive_visit_ext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! { }.into()
+}
+
+/// Implementation of `[#derive(NodeBuilder)]`
+#[proc_macro_derive(NodeBuilder)]
+pub fn derive_node_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! { }.into()
+}
+
+/// Implementation of `[#derive(FieldBuilder)]`
+#[proc_macro_derive(FieldBuilder)]
+pub fn derive_field_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! { }.into()
+}
+
+/// Implementation of `[#derive(VisitorExt)]`
+#[proc_macro_derive(VisitorExt)]
+pub fn derive_visitor_ext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! { }.into()
+}
+
+/// Implementation of `[#derive(VisitorExtMut)]`
+#[proc_macro_derive(VisitorExtMut)]
+pub fn derive_visitor_ext_mut(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    quote! { }.into()
+}
+
 struct VisitType {
     visit_trait: TokenStream,
     visitor_trait: TokenStream,

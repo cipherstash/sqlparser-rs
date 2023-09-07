@@ -21,12 +21,16 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "visitor")]
 use sqlparser_derive::{Visit, VisitMut};
 
+#[cfg(feature = "visitor_ext")]
+use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+
 use super::display_separated;
 
 /// Unary operators
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum UnaryOperator {
     /// Plus, e.g. `+9`
     Plus,
@@ -68,6 +72,7 @@ impl fmt::Display for UnaryOperator {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum BinaryOperator {
     /// Plus, e.g. `a + b`
     Plus,

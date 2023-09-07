@@ -20,11 +20,12 @@ name = "sqlparser"
 path = "src/lib.rs"
 
 [features]
-default = ["std"]
+default = ["std", "visitor_ext"]
 std = []
 # Enable JSON output in the `cli` example:
 json_example = ["serde_json", "serde"]
 visitor = ["sqlparser_derive"]
+visitor_ext = ["sqlparser_derive"]
 
 [dependencies]
 bigdecimal = { version = "0.4.1", features = ["serde"], optional = true }
@@ -50,3 +51,11 @@ publish = false
 [package.metadata.docs.rs]
 # Document these features on docs.rs
 features = ["serde", "visitor"]
+
+[build-dependencies]
+# TODO: determine the minimum feature set that we need to make it build for all these deps.
+syn = { version = "2", features = ["full"] }
+quote = { version = "1" }
+proc-macro2 = "1.0"
+walkdir = "2"
+ident_case = "1.0.1"

@@ -23,6 +23,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "visitor")]
 use sqlparser_derive::{Visit, VisitMut};
 
+#[cfg(feature = "visitor_ext")]
+use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+
 use crate::ast::value::escape_single_quote_string;
 use crate::ast::{
     display_comma_separated, display_separated, DataType, Expr, Ident, ObjectName, SequenceOptions,
@@ -33,6 +36,7 @@ use crate::tokenizer::Token;
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum AlterTableOperation {
     /// `ADD <table_constraint>`
     AddConstraint(TableConstraint),
@@ -107,6 +111,7 @@ pub enum AlterTableOperation {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum AlterIndexOperation {
     RenameIndex { index_name: ObjectName },
 }
@@ -230,6 +235,7 @@ impl fmt::Display for AlterIndexOperation {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum AlterColumnOperation {
     /// `SET NOT NULL`
     SetNotNull,
@@ -274,6 +280,7 @@ impl fmt::Display for AlterColumnOperation {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum TableConstraint {
     /// `[ CONSTRAINT <name> ] { PRIMARY KEY | UNIQUE } (<columns>)`
     Unique {
@@ -439,6 +446,7 @@ impl fmt::Display for TableConstraint {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum KeyOrIndexDisplay {
     /// Nothing to display
     None,
@@ -475,6 +483,7 @@ impl fmt::Display for KeyOrIndexDisplay {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum IndexType {
     BTree,
     Hash,
@@ -492,6 +501,7 @@ impl fmt::Display for IndexType {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub struct ProcedureParam {
     pub name: Ident,
     pub data_type: DataType,
@@ -507,6 +517,7 @@ impl fmt::Display for ProcedureParam {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub struct ColumnDef {
     pub name: Ident,
     pub data_type: DataType,
@@ -543,6 +554,7 @@ impl fmt::Display for ColumnDef {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub struct ColumnOptionDef {
     pub name: Option<Ident>,
     pub option: ColumnOption,
@@ -559,6 +571,7 @@ impl fmt::Display for ColumnOptionDef {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum ColumnOption {
     /// `NULL`
     Null,
@@ -683,6 +696,7 @@ impl fmt::Display for ColumnOption {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum GeneratedAs {
     Always,
     ByDefault,
@@ -709,6 +723,7 @@ fn display_constraint_name(name: &'_ Option<Ident>) -> impl fmt::Display + '_ {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum ReferentialAction {
     Restrict,
     Cascade,
@@ -733,6 +748,7 @@ impl fmt::Display for ReferentialAction {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum UserDefinedTypeRepresentation {
     Composite {
         attributes: Vec<UserDefinedTypeCompositeAttributeDef>,
@@ -753,6 +769,7 @@ impl fmt::Display for UserDefinedTypeRepresentation {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub struct UserDefinedTypeCompositeAttributeDef {
     pub name: Ident,
     pub data_type: DataType,

@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "visitor")]
 use sqlparser_derive::{Visit, VisitMut};
 
+#[cfg(feature = "visitor_ext")]
+use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+
 use crate::ast::{
     ColumnDef, FileFormat, HiveDistributionStyle, HiveFormat, Ident, ObjectName, OnCommit, Query,
     SqlOption, Statement, TableConstraint,
@@ -44,6 +47,7 @@ use crate::parser::ParserError;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub struct CreateTableBuilder {
     pub or_replace: bool,
     pub temporary: bool,
