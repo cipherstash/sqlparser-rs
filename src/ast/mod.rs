@@ -28,9 +28,6 @@ use sqlparser_derive::{Visit, VisitMut};
 #[cfg(feature = "visitor_ext")]
 use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
 
-#[cfg(feature = "visitor_ext")]
-mod node_temp;
-
 pub use self::data_type::{
     CharLengthUnits, CharacterLength, DataType, ExactNumberInfo, TimezoneInfo,
 };

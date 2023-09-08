@@ -59,3 +59,4 @@ quote = { version = "1" }
 proc-macro2 = "1.0"
 walkdir = "2"
 ident_case = "1.0.1"
+prettyplease = "0.2.15"
