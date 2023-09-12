@@ -51,13 +51,13 @@ mod generator {
 
         let generated: TokenStream = quote! {
             #[derive(Debug, Clone)]
-            pub enum Node<'ast, M: Mutability> {
+            pub enum Node<'ast, M: crate::ast::visitor_ext::Mutability> {
                 Primitive(Primitive<'ast, M>),
                 #node_variants
             }
 
             #[derive(Debug, Clone)]
-            pub enum Field<'ast, M: Mutability> {
+            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
                 #field_variants
             }
 
@@ -97,10 +97,6 @@ mod generator {
                 base_dir: PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap())
                     .join("src"),
                 dest_file: PathBuf::from(&env::var("OUT_DIR").unwrap()).join("ast/generated.rs"),
-                // mod_path: syn::Path {
-                //     leading_colon: None,
-                //     segments: Punctuated::new(),
-                // },
                 mod_path: Vec::new(),
                 nodes: Vec::new(),
             }
@@ -258,17 +254,17 @@ mod generator {
                     use std::{cell::RefCell, rc::Rc};
 
                     #[automatically_derived]
-                    impl crate::visitor_ext::NodeBuilder::FieldBuilder for #node_path::#node_ident {
-                        type NodeField<'ast, M: Mutability> = Field<'ast, M>;
+                    impl crate::ast::visitor_ext::NodeBuilder::FieldBuilder for #node_path::#node_ident {
+                        type NodeField<'ast, M: crate::ast::visitor_ext::Mutability> = Field<'ast, M>;
 
-                        fn wrap_field<'ast, F>(field: F) -> crate::visitor_ext::Field<'ast, ByRef>
+                        fn wrap_field<'ast, F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByRef>
                         where
                             Self::NodeField<'ast, ByRef>: From<F>,
                         {
                             crate::Field::#node_ident(field.into())
                         }
 
-                        fn wrap_field_mut<'ast, F>(field: F) -> crate::visitor_ext::Field<'ast, ByMutRef>
+                        fn wrap_field_mut<'ast, F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByMutRef>
                         where
                             Self::NodeField<'ast, ByMutRef>: From<F>,
                         {
@@ -277,18 +273,18 @@ mod generator {
                     }
 
                     #[automatically_derived]
-                    impl crate::visitor_ext::NodeBuilder for #node_path::#node_ident {
-                        fn wrap_node<'ast>(&'ast self) -> crate::visitor_ext::Node<'ast, ByRef> {
+                    impl crate::ast::visitor_ext::NodeBuilder for #node_path::#node_ident {
+                        fn wrap_node<'ast>(&'ast self) -> crate::ast::visitor_ext::Node<'ast, ByRef> {
                             crate::Node::#node_ident(self)
                         }
 
-                        fn wrap_node_mut<'ast>(&'ast mut self) -> crate::visitor_ext::Node<'ast, ByMutRef> {
+                        fn wrap_node_mut<'ast>(&'ast mut self) -> crate::ast::visitor_ext::Node<'ast, ByMutRef> {
                             crate::Node::#node_ident(Rc::new(RefCell::new(self)))
                         }
                     }
 
                     #[automatically_derived]
-                    impl<'ast, M: Mutability> From<Field<'ast, M>> for crate::visitor_ext::Field<'ast, M> {
+                    impl<'ast, M: crate::ast::visitor_ext::Mutability> From<Field<'ast, M>> for crate::ast::visitor_ext::Field<'ast, M> {
                         fn from(field: Field<'ast, M>) -> Self {
                             crate::Field::#node_ident(field)
                         }
@@ -335,7 +331,7 @@ mod generator {
                         }
 
                         #[automatically_derived]
-                        impl<'ast, M: Mutability> From<Field<'ast, M>> for super::Field<'ast, M> {
+                        impl<'ast, M: crate::ast::visitor_ext::Mutability> From<Field<'ast, M>> for super::Field<'ast, M> {
                             fn from(value: Field<'ast, M>) -> Self {
                                 super::Field::X(value)
                             }
@@ -489,7 +485,7 @@ mod generator {
 
                     quote! {
                         #[derive(Debug, Clone)]
-                        pub enum Field<'ast, M: Mutability> {
+                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
                             #fields
                         }
                     }
@@ -499,7 +495,7 @@ mod generator {
                         .into_iter()
                         .enumerate()
                         .map(|(idx, f)| {
-                            let ident = format!("Field_{}", idx);
+                            let ident = format!("Field{}", idx);
                             let ident = Ident::new(&ident, Span::call_site());
                             let ty = f.ty.clone();
                             quote! {
@@ -510,7 +506,7 @@ mod generator {
 
                     quote! {
                         #[derive(Debug, Clone)]
-                        pub enum Field<'ast, M: Mutability> {
+                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
                             #fields
                         }
                     }

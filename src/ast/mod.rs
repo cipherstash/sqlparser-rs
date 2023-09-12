@@ -1182,6 +1182,7 @@ pub enum Password {
     derive(Visit, VisitMut),
     visit(with = "visit_statement")
 )]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
 pub enum Statement {
     /// Analyze (Hive)
     Analyze {
