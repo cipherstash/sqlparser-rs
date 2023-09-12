@@ -37,8 +37,29 @@ impl Mutability for ByMutRef {
     type Type<'a, T: 'a + Debug> = Rc<RefCell<&'a mut T>>;
 }
 
+/// A optionally mutable reference to an AST node that contains a value of a
+/// primitive type.
+#[derive(Debug, Clone)]
+pub enum Primitive<'ast, M: Mutability> {
+    String(M::Type<'ast, String>),
+    Char(M::Type<'ast, char>),
+    Bool(M::Type<'ast, bool>),
+    F32(M::Type<'ast, f32>),
+    F64(M::Type<'ast, f64>),
+    U8(M::Type<'ast, u8>),
+    U16(M::Type<'ast, u16>),
+    U32(M::Type<'ast, u32>),
+    U64(M::Type<'ast, u64>),
+    I8(M::Type<'ast, i8>),
+    I16(M::Type<'ast, i16>),
+    I32(M::Type<'ast, i32>),
+    I64(M::Type<'ast, i64>),
+    #[cfg(feature = "bigdecimal")]
+    BigDecimal(M::Type<'ast, bigdecimal::BigDecimal>),
+}
+
 // Defines `pub enum Node<'ast> { .. }`  and `pub enum Field<'ast>{ .. }`
-// include!(concat!(env!("OUT_DIR"), "/ast/generated/node.rs"));
+include!(concat!(env!("OUT_DIR"), "/ast/generated.rs"));
 
 /// An optionally mutable reference to an element of a Vec node.
 /// It also contains the index of the element.
