@@ -22,30 +22,32 @@ mod generator {
         node_gen.process_pub_mod(&Ident::new("ast", Span::call_site()));
         node_gen.nodes.sort_by(|a, b| a.ident().cmp(&b.ident()));
 
-        let node_variants = node_gen
-            .nodes
-            .clone()
-            .into_iter()
-            .fold(TokenStream::new(), |mut ts, node| {
-                let (path, ident) = node.full_qualified_ident();
-                ts.append_all(quote! {
-                    #ident ( M::Type<'ast, crate::#path::#ident> ),
+        let node_variants =
+            node_gen
+                .nodes
+                .clone()
+                .into_iter()
+                .fold(TokenStream::new(), |mut ts, node| {
+                    let (path, ident) = node.fq_ident();
+                    ts.append_all(quote! {
+                        #ident ( M::Type<'ast, crate::#path::#ident> ),
+                    });
+                    ts
                 });
-                ts
-            });
 
-        let field_variants = node_gen
-            .nodes
-            .clone()
-            .into_iter()
-            .fold(TokenStream::new(), |mut ts, node| {
-                let (_, ident) = node.full_qualified_ident();
-                let mod_ident = node.ident_to_module_name();
-                ts.append_all(quote! {
-                    #ident ( self::meta::#mod_ident::Field<'ast, M> ),
+        let field_variants =
+            node_gen
+                .nodes
+                .clone()
+                .into_iter()
+                .fold(TokenStream::new(), |mut ts, node| {
+                    let (_, ident) = node.fq_ident();
+                    let mod_ident = node.ident_to_module_name();
+                    ts.append_all(quote! {
+                        #ident ( self::meta::#mod_ident::Field<'ast, M> ),
+                    });
+                    ts
                 });
-                ts
-            });
 
         let meta: TokenStream = generate_node_meta(&node_gen.nodes);
 
@@ -67,8 +69,13 @@ mod generator {
         }
         .into();
 
-        create_dir_all(&node_gen.dest_file.parent().unwrap())
-            .expect(format!("Could not create directory for {}", &node_gen.dest_file.display()).as_str());
+        create_dir_all(&node_gen.dest_file.parent().unwrap()).expect(
+            format!(
+                "Could not create directory for {}",
+                &node_gen.dest_file.display()
+            )
+            .as_str(),
+        );
 
         let mut file = File::create(&node_gen.dest_file)
             .expect(format!("Could not open {}", &node_gen.dest_file.to_str().unwrap()).as_str());
@@ -83,10 +90,10 @@ mod generator {
         println!("cargo:rerun-if-changed=build.rs");
         println!("cargo:rerun-if-changed=src/ast");
     }
+
     struct NodeScanner {
         base_dir: PathBuf,
         dest_file: PathBuf,
-        // mod_path: syn::Path,
         mod_path: Vec<Ident>,
         nodes: Vec<NodeInfo>,
     }
@@ -94,8 +101,7 @@ mod generator {
     impl NodeScanner {
         fn new() -> Self {
             Self {
-                base_dir: PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap())
-                    .join("src"),
+                base_dir: PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("src"),
                 dest_file: PathBuf::from(&env::var("OUT_DIR").unwrap()).join("ast/generated.rs"),
                 mod_path: Vec::new(),
                 nodes: Vec::new(),
@@ -103,25 +109,31 @@ mod generator {
         }
 
         fn syn_path(&self) -> syn::Path {
-            assert!(self.mod_path.len() != 0, "expected mod_path to have len > 0");
+            assert!(
+                self.mod_path.len() != 0,
+                "expected mod_path to have len > 0"
+            );
 
             let syn_path = syn::Path {
                 leading_colon: None,
                 segments: Punctuated::new(),
             };
 
-            self.mod_path.clone().iter().fold(syn_path, move |mut acc, ident| {
-                acc.segments.push(PathSegment {
-                    ident: ident.clone(),
-                    arguments: PathArguments::None
-                });
-                acc
-            })
+            self.mod_path
+                .clone()
+                .iter()
+                .fold(syn_path, move |mut acc, ident| {
+                    acc.segments.push(PathSegment {
+                        ident: ident.clone(),
+                        arguments: PathArguments::None,
+                    });
+                    acc
+                })
         }
 
         // Processes a restricted module.
         // We assume that the types contained within are re-exported from the
-        // current module, so we do not male target_mod part of the FQN of
+        // current module, so we do not make target_mod part of the FQN of
         // identifiers of generated types.
         fn process_restricted_mod(&mut self, target_mod: &Ident) -> () {
             let syntax_tree = self.parse_mod(target_mod);
@@ -149,15 +161,23 @@ mod generator {
             } else {
                 mod_path.set_extension("rs");
                 File::open(&mod_path)
-            }.expect(&format!("Could not open file for module: {}", mod_path.display()));
+            }
+            .expect(&format!(
+                "Could not open file for module: {}",
+                mod_path.display()
+            ));
 
             let mut file_content = String::new();
 
-            mod_file.read_to_string(&mut file_content)
-                .expect(&format!("Could read file for module: {}", mod_path.display()));
+            mod_file.read_to_string(&mut file_content).expect(&format!(
+                "Could read file for module: {}",
+                mod_path.display()
+            ));
 
-            let syntax_tree = syn::parse_file(&file_content)
-                .expect(&format!("Could not parse file for module: {}", mod_path.display()));
+            let syntax_tree = syn::parse_file(&file_content).expect(&format!(
+                "Could not parse file for module: {}",
+                mod_path.display()
+            ));
 
             syntax_tree
         }
@@ -189,7 +209,7 @@ mod generator {
                             }
 
                             self.mod_path.pop();
-                        },
+                        }
                         // An imported module.
                         None => {
                             if let Visibility::Public(_) = &mod_item.vis {
@@ -203,8 +223,7 @@ mod generator {
                             }
                         }
                     }
-
-                },
+                }
                 Item::Struct(ItemStruct {
                     ident,
                     attrs,
@@ -245,9 +264,9 @@ mod generator {
         let mut tokens = TokenStream::new();
 
         nodes.into_iter().fold(&mut tokens, |tokens, node| {
-            let (node_path, node_ident) = node.full_qualified_ident();
+            let (node_path, node_ident) = node.fq_ident();
             let node_mod = node.ident_to_module_name();
-            let fields_or_variants_meta: TokenStream = generate_fields_or_variant_meta(&node);
+            let fields_or_variants_meta: TokenStream = node.to_field_enum();
 
             let node_meta: TokenStream = quote! {
                 pub mod #node_mod {
@@ -307,8 +326,6 @@ mod generator {
                         }
                     }
 
-
-
                     #fields_or_variants_meta
                 }
             }
@@ -319,74 +336,6 @@ mod generator {
         });
 
         tokens
-    }
-
-    fn generate_fields_or_variant_meta(node: &NodeInfo) -> TokenStream {
-        let top_level_field_enum: TokenStream = generate_top_level_fields_enum(node);
-        match node {
-            NodeInfo::StructNode(StructInfo { fields, .. }) => fields.to_field_enum(),
-            NodeInfo::EnumNode(EnumInfo { variants, .. }) => variants
-                .into_iter()
-                .map(|(ident, fields)| {
-                    let variant_module_name = Case::Snake.convert(ident);
-
-                    let fields_enum: TokenStream = fields.to_field_enum();
-                    quote! {
-                        pub mod #variant_module_name {
-                            #[allow(unused_imports)]
-                            use crate::ast::*;
-
-                            #fields_enum
-                        }
-
-                        #[automatically_derived]
-                        impl<'ast, M: crate::ast::visitor_ext::Mutability> From<crate::ast::visitor_ext::Field<'ast, M>> for super::Field<'ast, M> {
-                            fn from(value: crate::ast::visitor_ext::Field<'ast, M>) -> Self {
-                                super::Field::#variant_module_name(value)
-                            }
-                        }
-
-                        #top_level_field_enum
-                    }
-                })
-                .collect(),
-        }
-        .into()
-    }
-
-    fn generate_top_level_fields_enum(node: &NodeInfo) -> TokenStream {
-        eprintln!("Node: {}", node.ident());
-        match node {
-            NodeInfo::StructNode(StructInfo { fields, .. }) => {
-                let variant_field_enums: TokenStream = fields.into_iter().map(|f| -> TokenStream {
-                    let ident = f.clone().ident.unwrap();
-                    let pascalcase_ident = Case::Pascal.convert(&ident);
-                    quote! {
-                        #ident (M::Type<'ast, crate::ast::meta::#ident::#pascalcase_ident>),
-                    }.into()
-                }).collect::<TokenStream>();
-
-                quote! {
-                    pub mod Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                        #variant_field_enums
-                    }
-                }
-            },
-            NodeInfo::EnumNode(EnumInfo { variants, .. }) => {
-                let variant_field_enums: TokenStream = variants.keys().into_iter().map(|ident| -> TokenStream {
-                    let pascalcase_ident = Case::Pascal.convert(&ident);
-                    quote! {
-                        #ident (M::Type<'ast, crate::ast::meta::#ident::#pascalcase_ident>),
-                    }.into()
-                }).collect::<TokenStream>();
-
-                quote! {
-                    pub mod Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                        #variant_field_enums
-                    }
-                }
-            }
-        }
     }
 
     fn should_generate_node_meta(attrs: &Vec<Attribute>) -> bool {
@@ -429,33 +378,6 @@ mod generator {
         EnumNode(EnumInfo),
     }
 
-    impl NodeInfo {
-        pub(crate) fn ident(&self) -> Ident {
-            match self {
-                NodeInfo::StructNode(StructInfo { ident, .. }) => ident.clone(),
-                NodeInfo::EnumNode(EnumInfo { ident, .. }) => ident.clone(),
-            }
-        }
-
-        pub(crate) fn full_qualified_ident(&self) -> (syn::Path, Ident) {
-            match self {
-                NodeInfo::StructNode(StructInfo { path, ident, .. }) => {
-                    (path.clone(), ident.clone())
-                }
-                NodeInfo::EnumNode(EnumInfo { path, ident, .. }) => (path.clone(), ident.clone()),
-            }
-        }
-
-        pub(crate) fn ident_to_module_name(&self) -> Ident {
-            let ident = match self {
-                NodeInfo::StructNode(StructInfo { ref ident, .. }) => ident,
-                NodeInfo::EnumNode(EnumInfo { ref ident, .. }) => ident,
-            };
-
-            Case::Snake.convert(ident)
-        }
-    }
-
     #[derive(Clone)]
     pub(crate) struct EnumInfo {
         pub(crate) path: syn::Path,
@@ -470,136 +392,111 @@ mod generator {
         pub(crate) fields: Fields,
     }
 
-    trait ToFieldsEnum {
-        fn to_field_enum(&self) -> TokenStream;
-    }
-
-    impl ToFieldsEnum for EnumInfo {
-        fn to_field_enum(&self) -> TokenStream {
-            // Output a Field enum for each variant in own child module
-            // Then output top level Field enum
-            let children: TokenStream = self.variants.values().into_iter().map(|fields| {
-                generate_child_enum(fields)
-            }).collect::<TokenStream>();
-
-            let parent_variants: TokenStream = self.variants.keys().into_iter().map(|ident| -> TokenStream {
-                let child_module: Ident = Case::Snake.convert(ident);
-
-                quote! {
-                    #ident (M::Type<'ast, self::#child_module::Field<'ast, M>>),
-                }.into()
-            }).collect::<TokenStream>();
-
-            quote! {
-                // TODO: wrap in module
-                #children
-
-                pub Field<'ast, M: Mutability> {
-                    #parent_variants
-                }
+    impl NodeInfo {
+        fn ident(&self) -> Ident {
+            match self {
+                NodeInfo::StructNode(StructInfo { ident, .. }) => ident.clone(),
+                NodeInfo::EnumNode(EnumInfo { ident, .. }) => ident.clone(),
             }
         }
-    }
 
-    fn generate_child_enum(fields: &Fields) -> TokenStream {
-        match fields {
-            Fields::Named(FieldsNamed { named, .. }) => {
-                let fields: TokenStream = named
-                    .into_iter()
-                    .map(|f| {
-                        let ident = f.ident.clone().unwrap();
-                        let ident = Case::Pascal.convert(&ident);
-                        let ty = f.ty.clone();
-                        quote! {
-                            #ident (M::Type<'ast, #ty>),
-                        }
-                    })
-                    .collect();
-
-                quote! {
-                    #[derive(Debug, Clone)]
-                    pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                        #fields
-                    }
+        fn fq_ident(&self) -> (syn::Path, Ident) {
+            match self {
+                NodeInfo::StructNode(StructInfo { path, ident, .. }) => {
+                    (path.clone(), ident.clone())
                 }
-            },
-            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let fields: TokenStream = unnamed
-                    .into_iter()
-                    .enumerate()
-                    .map(|(idx, f)| {
-                        let ident = format!("Field{}", idx);
-                        let ident = Ident::new(&ident, Span::call_site());
-                        let ty = f.ty.clone();
-                        quote! {
-                            #ident(M::Type<'ast, #ty>),
-                        }
-                    })
-                    .collect();
-
-                quote! {
-                    #[derive(Debug, Clone)]
-                    pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                        #fields
-                    }
-                }
-            },
-            Fields::Unit => quote! {}.into(),
-
+                NodeInfo::EnumNode(EnumInfo { path, ident, .. }) => (path.clone(), ident.clone()),
+            }
         }
-    }
 
-    impl ToFieldsEnum for StructInfo {
-        fn to_field_enum(&self) -> TokenStream {
-            let the_enum: TokenStream = match self {
-                Fields::Named(FieldsNamed { named, .. }) => {
-                    let fields: TokenStream = named
-                        .into_iter()
-                        .map(|f| {
-                            let ident = f.ident.clone().unwrap();
-                            let ident = Case::Pascal.convert(&ident);
-                            let ty = f.ty.clone();
-                            quote! {
-                                #ident (M::Type<'ast, #ty>),
-                            }
-                        })
-                        .collect();
-
-                    quote! {
-                        #[derive(Debug, Clone)]
-                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                            #fields
-                        }
-                    }
-                },
-                Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                    let fields: TokenStream = unnamed
-                        .into_iter()
-                        .enumerate()
-                        .map(|(idx, f)| {
-                            let ident = format!("Field{}", idx);
-                            let ident = Ident::new(&ident, Span::call_site());
-                            let ty = f.ty.clone();
-                            quote! {
-                                #ident(M::Type<'ast, #ty>),
-                            }
-                        })
-                        .collect();
-
-                    quote! {
-                        #[derive(Debug, Clone)]
-                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
-                            #fields
-                        }
-                    }
-                },
-                Fields::Unit => quote! {}.into(),
+        fn ident_to_module_name(&self) -> Ident {
+            let ident = match self {
+                NodeInfo::StructNode(StructInfo { ref ident, .. }) => ident,
+                NodeInfo::EnumNode(EnumInfo { ref ident, .. }) => ident,
             };
 
-            quote! {
-                #the_enum
+            Case::Snake.convert(ident)
+        }
+
+        fn to_field_enum(&self) -> TokenStream {
+            match self {
+                NodeInfo::StructNode(sn) => {
+                    generate_enum_for_fields((sn.ident.clone(), sn.fields.clone()))
+                }
+                NodeInfo::EnumNode(en) => {
+                    let children = en
+                        .variants
+                        .clone()
+                        .into_iter()
+                        .map(generate_enum_for_fields)
+                        .collect::<TokenStream>();
+
+                    let parent_variants: TokenStream = en
+                        .variants
+                        .keys()
+                        .into_iter()
+                        .map(|ident| -> TokenStream {
+                            let child_module: Ident = Case::Snake.convert(ident);
+
+                            quote! {
+                                #ident (M::Type<'ast, self::#child_module::Field<'ast, M>>),
+                            }
+                            .into()
+                        })
+                        .collect::<TokenStream>();
+
+                    quote! {
+                        #children
+
+                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
+                            #parent_variants
+                        }
+                    }
+                }
             }
         }
+    }
+
+
+    fn generate_enum_for_fields(variant: (Ident, Fields)) -> TokenStream {
+        let fields: TokenStream = match variant.1 {
+            Fields::Named(FieldsNamed { named, .. }) => named
+                .into_iter()
+                .map(|f| {
+                    let ident = f.ident.clone().unwrap();
+                    let ident = Case::Pascal.convert(&ident);
+                    let ty = f.ty.clone();
+                    quote! {
+                        #ident (M::Type<'ast, #ty>),
+                    }
+                })
+                .collect::<TokenStream>(),
+            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => unnamed
+                .into_iter()
+                .enumerate()
+                .map(|(idx, f)| {
+                    let ident = format!("Field{}", idx);
+                    let ident = Ident::new(&ident, Span::call_site());
+                    let ty = f.ty.clone();
+                    quote! {
+                        #ident(M::Type<'ast, #ty>),
+                    }
+                })
+                .collect::<TokenStream>(),
+            Fields::Unit => quote! {}.into(),
+        };
+
+        let module_ident = variant.0;
+
+        quote! {
+            pub mod #module_ident {
+                #[derive(Debug, Clone)]
+                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
+                    #fields
+                }
+            }
+        }
+        .into()
     }
 
     enum Case {
@@ -640,7 +537,6 @@ mod generator {
             }
         }
     }
-
 }
 
 #[cfg(feature = "visitor_ext")]
