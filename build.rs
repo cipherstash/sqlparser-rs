@@ -63,6 +63,7 @@ mod generator {
                 #field_variants
             }
 
+            #[allow(unused_imports)]
             pub mod meta {
                 #meta
             }
@@ -272,6 +273,8 @@ mod generator {
                 #[allow(unused_imports)]
                 pub mod #node_mod {
                     use crate::ast::*;
+                    use crate::ast::helpers::stmt_create_table::*;
+                    use crate::ast::helpers::stmt_data_loading::*;
 
                     use std::{cell::RefCell, rc::Rc};
 
