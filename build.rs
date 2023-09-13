@@ -235,6 +235,8 @@ mod generator {
                         self.nodes.push(NodeInfo::StructNode(StructInfo {
                             path: self.syn_path(),
                             ident: ident.clone(),
+                            // TODO: check [#cfg(...)]
+                            // remove variant fields when required feature not enabled
                             fields: fields.clone(),
                         }))
                     }
@@ -251,6 +253,9 @@ mod generator {
                             ident: ident.clone(),
                             variants: variants
                                 .into_iter()
+                                // TODO: check [#cfg(...)]
+                                // 1. remove variants when required feature not enabled
+                                // 2. remove variant fields when required feature not enabled
                                 .map(|v| (v.ident.clone(), v.fields.clone()))
                                 .collect(),
                         }));
