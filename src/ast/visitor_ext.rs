@@ -19,43 +19,43 @@ pub struct ByMutRef;
 /// Trait so that Node, Field & Primitive can be generic over mutability.
 ///
 /// This trait is *sealed*: the list of implementors below is total.
-pub trait Mutability: Sealed
+pub trait Mutability<'a>: Sealed
 where
-    Self: Debug + Clone,
+    Self: Debug,
 {
-    type Type<'a, T: 'a + Debug>: Debug + Clone;
+    type Type<T: 'a + Debug>: Debug + 'a;
 }
 
 impl Sealed for ByRef {}
 impl Sealed for ByMutRef {}
 
-impl Mutability for ByRef {
-    type Type<'a, T: 'a + Debug> = &'a T;
+impl<'a> Mutability<'a> for ByRef {
+    type Type<T: 'a + Debug> = &'a T;
 }
 
-impl Mutability for ByMutRef {
-    type Type<'a, T: 'a + Debug> = Rc<RefCell<&'a mut T>>;
+impl<'a> Mutability<'a> for ByMutRef {
+    type Type<T: 'a + Debug> = Rc<RefCell<&'a mut T>>;
 }
 
 /// A optionally mutable reference to an AST node that contains a value of a
 /// primitive type.
 #[derive(Debug, Clone)]
-pub enum Primitive<'ast, M: Mutability> {
-    String(M::Type<'ast, String>),
-    Char(M::Type<'ast, char>),
-    Bool(M::Type<'ast, bool>),
-    F32(M::Type<'ast, f32>),
-    F64(M::Type<'ast, f64>),
-    U8(M::Type<'ast, u8>),
-    U16(M::Type<'ast, u16>),
-    U32(M::Type<'ast, u32>),
-    U64(M::Type<'ast, u64>),
-    I8(M::Type<'ast, i8>),
-    I16(M::Type<'ast, i16>),
-    I32(M::Type<'ast, i32>),
-    I64(M::Type<'ast, i64>),
+pub enum Primitive<'ast, M: Mutability<'ast>> {
+    String(M::Type<String>),
+    Char(M::Type<char>),
+    Bool(M::Type<bool>),
+    F32(M::Type<f32>),
+    F64(M::Type<f64>),
+    U8(M::Type<u8>),
+    U16(M::Type<u16>),
+    U32(M::Type<u32>),
+    U64(M::Type<u64>),
+    I8(M::Type<i8>),
+    I16(M::Type<i16>),
+    I32(M::Type<i32>),
+    I64(M::Type<i64>),
     #[cfg(feature = "bigdecimal")]
-    BigDecimal(M::Type<'ast, bigdecimal::BigDecimal>),
+    BigDecimal(M::Type<bigdecimal::BigDecimal>),
 }
 
 // Defines `pub enum Node<'ast> { .. }`  and `pub enum Field<'ast>{ .. }`
@@ -64,7 +64,7 @@ include!(concat!(env!("OUT_DIR"), "/ast/generated.rs"));
 /// An optionally mutable reference to an element of a Vec node.
 /// It also contains the index of the element.
 #[derive(Debug, Clone)]
-pub struct ListItem<'ast, M: Mutability>(pub usize, pub Node<'ast, M>);
+pub struct ListItem<'ast, M: Mutability<'ast>>(pub usize, pub Node<'ast, M>);
 
 /// Used as a [`std::ops::ControlFlow`] value so that [`VisitorExt`] /
 /// implementations can communicate navigation instructions to
@@ -81,25 +81,25 @@ pub enum VisitOption {
 /// Intended for use only inside VisitExt implementations.
 ///
 /// This trait is derived when VisitExt is derived.
-pub trait NodeBuilder {
-    fn wrap_node<'ast>(&'ast self) -> Node<'ast, ByRef>;
+pub trait NodeBuilder<'ast> {
+    fn wrap_node(&'ast self) -> Node<'ast, ByRef>;
 
-    fn wrap_node_mut<'ast>(&'ast mut self) -> Node<'ast, ByMutRef>;
+    fn wrap_node_mut(&'ast mut self) -> Node<'ast, ByMutRef>;
 }
 
 /// Trait for building Field instances from fields of a concrete AST node.
 ///
 /// Intended for use only inside VisitExt implementations.
-pub trait FieldBuilder {
-    type NodeField<'ast, M: Mutability>;
+pub trait FieldBuilder<'ast> {
+    type NodeField<M: Mutability<'ast> + 'ast>;
 
-    fn wrap_field<'ast, F>(field: F) -> Field<'ast, ByRef>
+    fn wrap_field<F>(field: F) -> Field<'ast, ByRef>
     where
-        Self::NodeField<'ast, ByRef>: From<F>;
+        Self::NodeField<ByRef>: From<F>;
 
-    fn wrap_field_mut<'ast, F>(field: F) -> Field<'ast, ByMutRef>
+    fn wrap_field_mut<F>(field: F) -> Field<'ast, ByMutRef>
     where
-        Self::NodeField<'ast, ByMutRef>: From<F>;
+        Self::NodeField<ByMutRef>: From<F>;
 }
 
 pub trait VisitExt {

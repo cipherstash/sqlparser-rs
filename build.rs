@@ -30,7 +30,7 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        #ident ( M::Type<'ast, crate::#path::#ident> ),
+                        #ident ( M::Type<crate::#path::#ident>),
                     });
                     ts
                 });
@@ -52,14 +52,14 @@ mod generator {
         let meta: TokenStream = generate_node_meta(&node_gen.nodes);
 
         let generated: TokenStream = quote! {
-            #[derive(Debug, Clone)]
-            pub enum Node<'ast, M: crate::ast::visitor_ext::Mutability> {
+            #[derive(Debug)]
+            pub enum Node<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
                 Primitive(Primitive<'ast, M>),
                 #node_variants
             }
 
-            #[derive(Debug, Clone)]
-            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
+            #[derive(Debug)]
+            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
                 #field_variants
             }
 
@@ -276,37 +276,37 @@ mod generator {
                     use std::{cell::RefCell, rc::Rc};
 
                     #[automatically_derived]
-                    impl crate::ast::visitor_ext::FieldBuilder for crate::#node_path::#node_ident {
-                        type NodeField<'ast, M: crate::ast::visitor_ext::Mutability> = self::Field<'ast, M>;
+                    impl<'ast> crate::ast::visitor_ext::FieldBuilder<'ast> for crate::#node_path::#node_ident {
+                        type NodeField<M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> = self::Field<'ast, M>;
 
-                        fn wrap_field<'ast, F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByRef>
+                        fn wrap_field<F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByRef>
                         where
-                            Self::NodeField<'ast, ByRef>: From<F>,
+                            Self::NodeField<ByRef>: From<F>,
                         {
                             crate::ast::visitor_ext::Field::#node_ident(field.into())
                         }
 
-                        fn wrap_field_mut<'ast, F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByMutRef>
+                        fn wrap_field_mut<F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByMutRef>
                         where
-                            Self::NodeField<'ast, ByMutRef>: From<F>,
+                            Self::NodeField<ByMutRef>: From<F>,
                         {
                             crate::ast::visitor_ext::Field::#node_ident(field.into())
                         }
                     }
 
                     #[automatically_derived]
-                    impl crate::ast::visitor_ext::NodeBuilder for crate::#node_path::#node_ident {
-                        fn wrap_node<'ast>(&'ast self) -> crate::ast::visitor_ext::Node<'ast, ByRef> {
+                    impl<'ast> crate::ast::visitor_ext::NodeBuilder<'ast> for crate::#node_path::#node_ident {
+                        fn wrap_node(&'ast self) -> crate::ast::visitor_ext::Node<'ast, ByRef> {
                             crate::ast::visitor_ext::Node::#node_ident(self)
                         }
 
-                        fn wrap_node_mut<'ast>(&'ast mut self) -> crate::ast::visitor_ext::Node<'ast, ByMutRef> {
+                        fn wrap_node_mut(&'ast mut self) -> crate::ast::visitor_ext::Node<'ast, ByMutRef> {
                             crate::ast::Node::#node_ident(Rc::new(RefCell::new(self)))
                         }
                     }
 
                     #[automatically_derived]
-                    impl<'ast, M: crate::ast::visitor_ext::Mutability> From<self::Field<'ast, M>> for crate::ast::visitor_ext::Field<'ast, M> {
+                    impl<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> From<self::Field<'ast, M>> for crate::ast::visitor_ext::Field<'ast, M> {
                         fn from(field: Field<'ast, M>) -> Self {
                             crate::ast::visitor_ext::Field::#node_ident(field)
                         }
@@ -421,14 +421,14 @@ mod generator {
         fn to_field_enum(&self) -> TokenStream {
             match self {
                 NodeInfo::StructNode(sn) => {
-                    generate_enum_for_fields((sn.ident.clone(), sn.fields.clone()))
+                    generate_enum_for_fields((sn.ident.clone(), sn.fields.clone()), false)
                 }
                 NodeInfo::EnumNode(en) => {
                     let children = en
                         .variants
                         .clone()
                         .into_iter()
-                        .map(generate_enum_for_fields)
+                        .map(|variant| generate_enum_for_fields(variant, true))
                         .collect::<TokenStream>();
 
                     let parent_variants: TokenStream = en
@@ -439,7 +439,7 @@ mod generator {
                             let child_module: Ident = Case::Snake.convert(ident);
 
                             quote! {
-                                #ident (M::Type<'ast, #child_module::Field<'ast, M>>),
+                                #ident (M::Type<#child_module::Field<'ast, M>>),
                             }
                             .into()
                         })
@@ -448,7 +448,7 @@ mod generator {
                     quote! {
                         #children
 
-                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
+                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> {
                             #parent_variants
                         }
                     }
@@ -458,7 +458,7 @@ mod generator {
     }
 
 
-    fn generate_enum_for_fields(variant: (Ident, Fields)) -> TokenStream {
+    fn generate_enum_for_fields(variant: (Ident, Fields), wrap_in_mod: bool) -> TokenStream {
         let fields: TokenStream = match variant.1 {
             Fields::Named(FieldsNamed { named, .. }) => named
                 .into_iter()
@@ -467,7 +467,7 @@ mod generator {
                     let ident = Case::Pascal.convert(&ident);
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (M::Type<'ast, #ty>),
+                        #ident (M::Type<#ty>),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -479,7 +479,7 @@ mod generator {
                     let ident = Ident::new(&ident, Span::call_site());
                     let ty = f.ty.clone();
                     quote! {
-                        #ident(M::Type<'ast, #ty>),
+                        #ident(M::Type<#ty>),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -488,18 +488,28 @@ mod generator {
 
         let module_ident = Case::Snake.convert(&variant.0);
 
-        quote! {
-            #[allow(unused_imports)]
-            pub mod #module_ident {
-                use ::sqlparser::tokenizer::Token;
-                use crate::ast::*;
+        if wrap_in_mod {
+            quote! {
+                #[allow(unused_imports)]
+                pub mod #module_ident {
+                    use ::sqlparser::tokenizer::Token;
+                    use crate::ast::*;
+                    #[derive(Debug, Clone)]
+                    pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
+                        #fields
+                    }
+                }
+            }
+            .into()
+        } else {
+            quote! {
                 #[derive(Debug, Clone)]
-                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability> {
+                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
                     #fields
                 }
             }
+            .into()
         }
-        .into()
     }
 
     enum Case {
