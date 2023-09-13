@@ -8,14 +8,15 @@ mod generator {
 
     use ident_case::RenameRule;
     use proc_macro2::{Span, TokenStream};
-    use quote::{quote, TokenStreamExt};
+    use quote::{quote, TokenStreamExt, ToTokens};
     use syn::ext::IdentExt;
     use syn::Meta::{self, List};
     use syn::{
         punctuated::Punctuated, Attribute, Ident, Item, ItemEnum, ItemStruct, PathArguments,
         PathSegment,
     };
-    use syn::{Fields, FieldsNamed, FieldsUnnamed, Token, Visibility};
+    use syn::{Fields, FieldsNamed, FieldsUnnamed, Token, Visibility, Expr};
+    use cfg_expr::{targets::get_builtin_target_by_triple, Expression, Predicate};
 
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
@@ -237,7 +238,7 @@ mod generator {
                             ident: ident.clone(),
                             // TODO: check [#cfg(...)]
                             // remove variant fields when required feature not enabled
-                            fields: fields.clone(),
+                            fields: fields.clone()
                         }))
                     }
                 }
@@ -264,6 +265,31 @@ mod generator {
                 _ => {}
             }
         }
+    }
+
+    fn filter_fields(fields: &mut Fields) {
+
+        fields.iter().filter(|f| {
+            f.attrs.iter().any(|attr| {
+                if attr.path().is_ident("cfg") {
+                    let nested = attr.parse_args::<Expr>().unwrap();
+
+                    let tokens: TokenStream = nested.to_token_stream();
+                    let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
+                    let avail_target_feats = ["bigdecimal"];
+                    expr.eval(|pred| {
+                        match pred {
+                            Predicate::TargetFeature(feat) => avail_target_feats.contains(feat),
+                            _ => false,
+                        }
+                    })
+
+                } else {
+                    true
+                }
+            })
+        });
+
     }
 
     fn generate_node_meta(nodes: &Vec<NodeInfo>) -> TokenStream {
