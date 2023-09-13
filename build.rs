@@ -445,11 +445,21 @@ mod generator {
                         })
                         .collect::<TokenStream>();
 
-                    quote! {
-                        #children
+                    if en.variants.len() > 0 {
+                        quote! {
+                            #children
 
-                        pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> {
-                            #parent_variants
+                            #[derive(Debug)]
+                            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> {
+                                #parent_variants
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #children
+
+                            #[derive(Debug)]
+                            pub struct Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast>(&'ast std::marker::PhantomData<M>);
                         }
                     }
                 }
@@ -459,6 +469,12 @@ mod generator {
 
 
     fn generate_enum_for_fields(variant: (Ident, Fields), wrap_in_mod: bool) -> TokenStream {
+        let field_count = match variant.1.clone() {
+            Fields::Named(FieldsNamed { named, .. }) => named.len(),
+            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => unnamed.len(),
+            Fields::Unit => 0,
+        };
+
         let fields: TokenStream = match variant.1 {
             Fields::Named(FieldsNamed { named, .. }) => named
                 .into_iter()
@@ -479,7 +495,7 @@ mod generator {
                     let ident = Ident::new(&ident, Span::call_site());
                     let ty = f.ty.clone();
                     quote! {
-                        #ident(M::Type<#ty>),
+                        #ident (M::Type<#ty>),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -488,27 +504,33 @@ mod generator {
 
         let module_ident = Case::Snake.convert(&variant.0);
 
+        let enum_def: TokenStream = if field_count > 0 {
+            quote! {
+                #[derive(Debug, Clone)]
+                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
+                    #fields
+                }
+            }.into()
+        } else {
+            quote! {
+                #[derive(Debug, Clone)]
+                pub struct Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast>(&'ast std::marker::PhantomData<M>);
+            }.into()
+        };
+
         if wrap_in_mod {
             quote! {
                 #[allow(unused_imports)]
                 pub mod #module_ident {
                     use ::sqlparser::tokenizer::Token;
                     use crate::ast::*;
-                    #[derive(Debug, Clone)]
-                    pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
-                        #fields
-                    }
+
+                    #enum_def
                 }
             }
             .into()
         } else {
-            quote! {
-                #[derive(Debug, Clone)]
-                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
-                    #fields
-                }
-            }
-            .into()
+            enum_def
         }
     }
 
