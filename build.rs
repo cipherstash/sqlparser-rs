@@ -11,11 +11,12 @@ mod generator {
     use quote::{quote, TokenStreamExt, ToTokens};
     use syn::ext::IdentExt;
     use syn::Meta::{self, List};
+    use syn::token::Comma;
     use syn::{
         punctuated::Punctuated, Attribute, Ident, Item, ItemEnum, ItemStruct, PathArguments,
         PathSegment,
     };
-    use syn::{Fields, FieldsNamed, FieldsUnnamed, Token, Visibility, Expr};
+    use syn::{Fields, FieldsNamed, FieldsUnnamed, Token, Visibility, Expr, Field};
     use cfg_expr::{targets::get_builtin_target_by_triple, Expression, Predicate};
 
     pub(crate) fn generate_node_and_field_meta() {
@@ -268,6 +269,41 @@ mod generator {
     }
 
     fn filter_fields(fields: &mut Fields) {
+        match fields {
+            Fields::Named(FieldsNamed{ mut named, .. }) => {
+                let filtered_fields = named.iter().filter(|f| {
+                    f.attrs.iter().any(|attr| {
+                        if attr.path().is_ident("cfg") {
+                            let nested = attr.parse_args::<Expr>().unwrap();
+
+                            let tokens: TokenStream = nested.to_token_stream();
+                            let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
+                            let avail_target_feats = ["bigdecimal"];
+                            expr.eval(|pred| {
+                                match pred {
+                                    Predicate::TargetFeature(feat) => avail_target_feats.contains(feat),
+                                    _ => false,
+                                }
+                            })
+
+                        } else {
+                            true
+                        }
+                    })
+                }).collect::<Vec<_>>();
+
+                let mut new_named = Punctuated::<Field, Comma>::new();
+                for field in filtered_fields {
+                    new_named.push(field.clone());
+                }
+
+                named = new_named
+            },
+            Fields::Unnamed(FieldsUnnamed { mut unnamed, .. }) => {
+
+            },
+            Fields::Unit => todo!(),
+        }
 
         fields.iter().filter(|f| {
             f.attrs.iter().any(|attr| {
