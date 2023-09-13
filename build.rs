@@ -1,23 +1,25 @@
 #[cfg(feature = "visitor_ext")]
 mod generator {
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
     use std::env;
     use std::fs::{create_dir_all, File};
     use std::io::{prelude::*, Read};
     use std::path::{Path, PathBuf};
 
+    use cfg_expr::{Expression, Predicate};
     use ident_case::RenameRule;
     use proc_macro2::{Span, TokenStream};
-    use quote::{quote, TokenStreamExt, ToTokens};
+    use quote::{quote, ToTokens, TokenStreamExt};
     use syn::ext::IdentExt;
+    use syn::token::{Brace, Paren};
     use syn::Meta::{self, List};
-    use syn::token::Comma;
+    use syn::{
+        Expr, Field, Fields, FieldsNamed, FieldsUnnamed, Token, Variant, Visibility,
+    };
     use syn::{
         punctuated::Punctuated, Attribute, Ident, Item, ItemEnum, ItemStruct, PathArguments,
         PathSegment,
     };
-    use syn::{Fields, FieldsNamed, FieldsUnnamed, Token, Visibility, Expr, Field};
-    use cfg_expr::{targets::get_builtin_target_by_triple, Expression, Predicate};
 
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
@@ -95,6 +97,7 @@ mod generator {
     }
 
     struct NodeScanner {
+        enabled_features: HashSet<String>,
         base_dir: PathBuf,
         dest_file: PathBuf,
         mod_path: Vec<Ident>,
@@ -103,7 +106,18 @@ mod generator {
 
     impl NodeScanner {
         fn new() -> Self {
+            let enabled_features: HashSet<String> = env::vars_os()
+                .into_iter()
+                .filter_map(|(k, _)| {
+                    k.into_string()
+                        .unwrap()
+                        .strip_prefix("CARGO_FEATURE_")
+                        .map(String::from)
+                })
+                .collect();
+
             Self {
+                enabled_features,
                 base_dir: PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("src"),
                 dest_file: PathBuf::from(&env::var("OUT_DIR").unwrap()).join("ast/generated.rs"),
                 mod_path: Vec::new(),
@@ -237,9 +251,8 @@ mod generator {
                         self.nodes.push(NodeInfo::StructNode(StructInfo {
                             path: self.syn_path(),
                             ident: ident.clone(),
-                            // TODO: check [#cfg(...)]
-                            // remove variant fields when required feature not enabled
-                            fields: fields.clone()
+                            fields: self
+                                .to_fields_enum(&self.filter_fields(fields.clone().into_iter())),
                         }))
                     }
                 }
@@ -253,12 +266,17 @@ mod generator {
                         self.nodes.push(NodeInfo::EnumNode(EnumInfo {
                             path: self.syn_path(),
                             ident: ident.clone(),
-                            variants: variants
+                            variants: self
+                                .filter_variants(variants.into_iter())
                                 .into_iter()
-                                // TODO: check [#cfg(...)]
-                                // 1. remove variants when required feature not enabled
-                                // 2. remove variant fields when required feature not enabled
-                                .map(|v| (v.ident.clone(), v.fields.clone()))
+                                .map(|v| {
+                                    (
+                                        v.ident.clone(),
+                                        self.to_fields_enum(
+                                            &self.filter_fields(v.fields.clone().into_iter()),
+                                        ),
+                                    )
+                                })
                                 .collect(),
                         }));
                     }
@@ -266,66 +284,72 @@ mod generator {
                 _ => {}
             }
         }
-    }
 
-    fn filter_fields(fields: &mut Fields) {
-        match fields {
-            Fields::Named(FieldsNamed{ mut named, .. }) => {
-                let filtered_fields = named.iter().filter(|f| {
-                    f.attrs.iter().any(|attr| {
-                        if attr.path().is_ident("cfg") {
-                            let nested = attr.parse_args::<Expr>().unwrap();
-
-                            let tokens: TokenStream = nested.to_token_stream();
-                            let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
-                            let avail_target_feats = ["bigdecimal"];
-                            expr.eval(|pred| {
-                                match pred {
-                                    Predicate::TargetFeature(feat) => avail_target_feats.contains(feat),
-                                    _ => false,
-                                }
-                            })
-
-                        } else {
-                            true
-                        }
-                    })
-                }).collect::<Vec<_>>();
-
-                let mut new_named = Punctuated::<Field, Comma>::new();
-                for field in filtered_fields {
-                    new_named.push(field.clone());
+        fn to_fields_enum(&self, fields: &Vec<Field>) -> Fields {
+            if fields.len() == 0 {
+                Fields::Unit
+            } else {
+                let mut punct = Punctuated::new();
+                for field in fields {
+                    punct.push(field.clone());
                 }
 
-                named = new_named
-            },
-            Fields::Unnamed(FieldsUnnamed { mut unnamed, .. }) => {
-
-            },
-            Fields::Unit => todo!(),
+                if fields.into_iter().all(|f| f.ident.is_some()) {
+                    Fields::Named(FieldsNamed {
+                        brace_token: Brace::default(),
+                        named: punct,
+                    })
+                } else {
+                    Fields::Unnamed(FieldsUnnamed {
+                        paren_token: Paren::default(),
+                        unnamed: punct,
+                    })
+                }
+            }
         }
 
-        fields.iter().filter(|f| {
-            f.attrs.iter().any(|attr| {
-                if attr.path().is_ident("cfg") {
-                    let nested = attr.parse_args::<Expr>().unwrap();
+        fn filter_variants<'a, I: Iterator<Item = &'a Variant>>(
+            &self,
+            variants: I,
+        ) -> Vec<&'a Variant> {
+            variants
+                .filter(|v| {
+                    v.attrs
+                        .iter()
+                        .any(|attr| self.retain_based_on_active_features(attr))
+                })
+                .collect::<Vec<_>>()
+        }
 
-                    let tokens: TokenStream = nested.to_token_stream();
-                    let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
-                    let avail_target_feats = ["bigdecimal"];
-                    expr.eval(|pred| {
-                        match pred {
-                            Predicate::TargetFeature(feat) => avail_target_feats.contains(feat),
-                            _ => false,
-                        }
-                    })
+        fn filter_fields<I: Iterator<Item = Field>>(&self, fields: I) -> Vec<Field> {
+            fields
+                .filter(|f| {
+                    f.attrs
+                        .iter()
+                        .any(|attr| self.retain_based_on_active_features(attr))
+                })
+                .collect::<Vec<_>>()
+        }
 
-                } else {
-                    true
-                }
-            })
-        });
+        fn retain_based_on_active_features(&self, attr: &Attribute) -> bool {
+            if attr.path().is_ident("cfg") {
+                let nested = attr.parse_args::<Expr>().unwrap();
+                let tokens: TokenStream = nested.to_token_stream();
+                let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
+                expr.eval(|pred| match pred {
+                    Predicate::TargetFeature(feat) => self.enabled_features.contains(*feat),
+                    _ => true,
+                })
+            } else {
+                true
+            }
+        }
+    }
 
+    impl Default for NodeScanner {
+        fn default() -> Self {
+            Self::new()
+        }
     }
 
     fn generate_node_meta(nodes: &Vec<NodeInfo>) -> TokenStream {
