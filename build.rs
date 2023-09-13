@@ -467,7 +467,6 @@ mod generator {
         }
     }
 
-
     fn generate_enum_for_fields(variant: (Ident, Fields), wrap_in_mod: bool) -> TokenStream {
         let field_count = match variant.1.clone() {
             Fields::Named(FieldsNamed { named, .. }) => named.len(),
@@ -510,7 +509,8 @@ mod generator {
                 pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
                     #fields
                 }
-            }.into()
+            }
+            .into()
         } else {
             quote! {
                 #[derive(Debug, Clone)]

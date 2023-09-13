@@ -63,7 +63,7 @@ include!(concat!(env!("OUT_DIR"), "/ast/generated.rs"));
 
 /// An optionally mutable reference to an element of a Vec node.
 /// It also contains the index of the element.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ListItem<'ast, M: Mutability<'ast>>(pub usize, pub Node<'ast, M>);
 
 /// Used as a [`std::ops::ControlFlow`] value so that [`VisitorExt`] /
