@@ -14,12 +14,10 @@ mod generator {
     use syn::token::{Brace, Paren};
     use syn::Meta::{self, List};
     use syn::{
-        Expr, Field, Fields, FieldsNamed, FieldsUnnamed, Token, Variant, Visibility,
-    };
-    use syn::{
         punctuated::Punctuated, Attribute, Ident, Item, ItemEnum, ItemStruct, PathArguments,
         PathSegment,
     };
+    use syn::{Expr, Field, Fields, FieldsNamed, FieldsUnnamed, Token, Variant, Visibility};
 
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
@@ -74,7 +72,11 @@ mod generator {
         }
         .into();
 
-        create_dir_all(&node_gen.dest_file.parent().unwrap()).expect(
+        create_dir_all(&node_gen.dest_file.parent().expect(&format!(
+            "Could not determine parent dir of {}",
+            &node_gen.dest_file.display()
+        )))
+        .expect(
             format!(
                 "Could not create directory for {}",
                 &node_gen.dest_file.display()
@@ -83,11 +85,14 @@ mod generator {
         );
 
         let mut file = File::create(&node_gen.dest_file)
-            .expect(format!("Could not open {}", &node_gen.dest_file.to_str().unwrap()).as_str());
+            .expect(format!("Could not open {}", &node_gen.dest_file.display()).as_str());
 
         eprintln!("cargo:message={}", generated.to_owned());
 
-        let formatted = prettyplease::unparse(&syn::parse_file(&generated.to_string()).unwrap());
+        let formatted = prettyplease::unparse(
+            &syn::parse_file(&generated.to_string())
+                .expect("BUG! Generated Rust code could not be parsed"),
+        );
 
         file.write_all(formatted.as_bytes())
             .expect(format!("Could not write to {}", &node_gen.dest_file.display()).as_str());
@@ -110,7 +115,7 @@ mod generator {
                 .into_iter()
                 .filter_map(|(k, _)| {
                     k.into_string()
-                        .unwrap()
+                        .expect("CARGO_FEATURE_.. env var contains invalid characters")
                         .strip_prefix("CARGO_FEATURE_")
                         .map(String::from)
                 })
@@ -118,8 +123,12 @@ mod generator {
 
             Self {
                 enabled_features,
-                base_dir: PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("src"),
-                dest_file: PathBuf::from(&env::var("OUT_DIR").unwrap()).join("ast/generated.rs"),
+                base_dir: PathBuf::from(
+                    &env::var("CARGO_MANIFEST_DIR").expect("Missing env var: CARGO_MANIFEST_DIR"),
+                )
+                .join("src"),
+                dest_file: PathBuf::from(&env::var("OUT_DIR").expect("Missing env var: OUT_DIR"))
+                    .join("ast/generated.rs"),
                 mod_path: Vec::new(),
                 nodes: Vec::new(),
             }
@@ -333,13 +342,21 @@ mod generator {
 
         fn retain_based_on_active_features(&self, attr: &Attribute) -> bool {
             if attr.path().is_ident("cfg") {
-                let nested = attr.parse_args::<Expr>().unwrap();
-                let tokens: TokenStream = nested.to_token_stream();
-                let expr: Expression = Expression::parse(&tokens.to_string()).unwrap();
-                expr.eval(|pred| match pred {
-                    Predicate::TargetFeature(feat) => self.enabled_features.contains(*feat),
-                    _ => true,
-                })
+                match attr.parse_args::<Expr>() {
+                    Ok(nested) => {
+                        let tokens: TokenStream = nested.to_token_stream();
+                        match Expression::parse(&tokens.to_string()) {
+                            Ok(expr) => expr.eval(|pred| match pred {
+                                Predicate::TargetFeature(feat) => {
+                                    self.enabled_features.contains(*feat)
+                                }
+                                _ => true,
+                            }),
+                            _ => panic!("Failed so parse expression in cfg attribute"),
+                        }
+                    }
+                    _ => false,
+                }
             } else {
                 true
             }
@@ -445,7 +462,7 @@ mod generator {
                                         .parse_args_with(
                                             Punctuated::<Ident, Token![,]>::parse_terminated,
                                         )
-                                        .unwrap()
+                                        .expect("Failed to parse cfg_attr attribut")
                                         .into_iter()
                                         .map(|ident| ident.to_string())
                                         .filter(|name| {
@@ -572,7 +589,10 @@ mod generator {
             Fields::Named(FieldsNamed { named, .. }) => named
                 .into_iter()
                 .map(|f| {
-                    let ident = f.ident.clone().unwrap();
+                    let ident = f
+                        .ident
+                        .clone()
+                        .expect("Expected an identifier for a named field");
                     let ident = Case::Pascal.convert(&ident);
                     let ty = f.ty.clone();
                     quote! {
