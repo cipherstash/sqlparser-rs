@@ -5,19 +5,19 @@ mod generator {
     use std::fs::{create_dir_all, File};
     use std::io::{prelude::*, Read};
     use std::path::{Path, PathBuf};
-
     use cfg_expr::{Expression, Predicate};
     use ident_case::RenameRule;
     use proc_macro2::{Span, TokenStream};
     use quote::{quote, ToTokens, TokenStreamExt};
-    use syn::ext::IdentExt;
-    use syn::token::{Brace, Paren};
-    use syn::Meta::{self, List};
     use syn::{
-        punctuated::Punctuated, Attribute, Ident, Item, ItemEnum, ItemStruct, PathArguments,
-        PathSegment,
+        ext::IdentExt,
+        punctuated::Punctuated,
+        token::{Brace, Paren},
+        Attribute, Expr, Field, Fields, FieldsNamed, FieldsUnnamed, Ident, Item, ItemEnum,
+        ItemStruct,
+        Meta::{self, List},
+        PathArguments, PathSegment, Token, Variant, Visibility,
     };
-    use syn::{Expr, Field, Fields, FieldsNamed, FieldsUnnamed, Token, Variant, Visibility};
 
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
@@ -352,7 +352,7 @@ mod generator {
                                 }
                                 _ => true,
                             }),
-                            _ => panic!("Failed so parse expression in cfg attribute"),
+                            _ => panic!("Failed to parse expression in cfg attribute"),
                         }
                     }
                     _ => false,
@@ -360,12 +360,6 @@ mod generator {
             } else {
                 true
             }
-        }
-    }
-
-    impl Default for NodeScanner {
-        fn default() -> Self {
-            Self::new()
         }
     }
 
