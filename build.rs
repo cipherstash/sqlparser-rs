@@ -22,8 +22,16 @@ mod generator {
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
         node_gen.process_pub_mod(&Ident::new("ast", Span::call_site()));
-        // node_gen.process_pub_mod(&Ident::new("tokenizer", Span::call_site()));
-        // node_gen.process_pub_mod(&Ident::new("keywords", Span::call_site()));
+        node_gen.process_pub_mod(&Ident::new("tokenizer", Span::call_site()));
+
+        // Handle sqlparser::keywords mod specially.
+        // It defines the enum using a macro which we cannot parse easily.
+        node_gen.nodes.push(NodeInfo::EnumNode(EnumInfo {
+            path: syn::parse_quote! { sqlparser::keywords },
+            ident: Ident::new("Keyword", Span::call_site()),
+            variants: HashMap::new(),
+        }));
+
         node_gen.nodes.sort_by(|a, b| a.ident().cmp(&b.ident()));
 
         let node_variants =
@@ -280,7 +288,7 @@ mod generator {
                     fields,
                     ..
                 }) => {
-                    if should_generate_node_meta(&attrs) {
+                    if should_generate_node_meta(&ident, &attrs) {
                         self.nodes.push(NodeInfo::StructNode(StructInfo {
                             path: self.syn_path(),
                             ident: ident.clone(),
@@ -295,7 +303,7 @@ mod generator {
                     variants,
                     ..
                 }) => {
-                    if should_generate_node_meta(&attrs) {
+                    if should_generate_node_meta(&ident, &attrs) {
                         self.nodes.push(NodeInfo::EnumNode(EnumInfo {
                             path: self.syn_path(),
                             ident: ident.clone(),
@@ -402,6 +410,8 @@ mod generator {
                     use crate::ast::*;
                     use crate::ast::helpers::stmt_create_table::*;
                     use crate::ast::helpers::stmt_data_loading::*;
+                    use ::sqlparser::tokenizer::*;
+                    use ::sqlparser::keywords::*;
 
                     use std::{cell::RefCell, rc::Rc};
 
@@ -417,7 +427,11 @@ mod generator {
         tokens
     }
 
-    fn should_generate_node_meta(attrs: &Vec<Attribute>) -> bool {
+    fn should_generate_node_meta(ident: &Ident, attrs: &Vec<Attribute>) -> bool {
+        if ident.to_string() == "Keyword" {
+            return true;
+        }
+
         attrs.iter().any(|attr| {
             if attr.path().is_ident("cfg_attr") {
                 let nested = attr.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated);
@@ -602,7 +616,8 @@ mod generator {
             quote! {
                 #[allow(unused_imports)]
                 pub mod #module_ident {
-                    use ::sqlparser::tokenizer::Token;
+                    use ::sqlparser::tokenizer::*;
+                    use ::sqlparser::keywords::*;
                     use crate::ast::*;
 
                     #enum_def
