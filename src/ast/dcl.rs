@@ -24,7 +24,10 @@ use serde::{Deserialize, Serialize};
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
+
+#[cfg(feature = "visitor_ext")]
+
 
 use super::{Expr, Ident, Password};
 use crate::ast::{display_separated, ObjectName};
@@ -35,7 +38,7 @@ use crate::ast::{display_separated, ObjectName};
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum RoleOption {
     BypassRLS(bool),
     ConnectionLimit(Expr),
@@ -101,7 +104,7 @@ impl fmt::Display for RoleOption {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum SetConfigValue {
     Default,
     FromCurrent,
@@ -114,7 +117,7 @@ pub enum SetConfigValue {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum ResetConfig {
     ALL,
     ConfigName(ObjectName),
@@ -124,7 +127,7 @@ pub enum ResetConfig {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum AlterRoleOperation {
     /// Generic
     RenameRole {

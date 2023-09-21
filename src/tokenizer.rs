@@ -35,7 +35,7 @@ use serde::{Deserialize, Serialize};
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
 
 use crate::ast::DollarQuotedString;
 use crate::dialect::{
@@ -48,7 +48,7 @@ use crate::keywords::{Keyword, ALL_KEYWORDS, ALL_KEYWORDS_INDEX};
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum Token {
     /// An end-of-file marker, not a real token
     EOF,
@@ -294,7 +294,7 @@ impl Token {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Word {
     /// The value of the token, without the enclosing quotes, and with the
     /// escape sequences (if any) processed (TODO: escapes are not handled)
@@ -334,7 +334,7 @@ impl Word {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum Whitespace {
     Space,
     Newline,

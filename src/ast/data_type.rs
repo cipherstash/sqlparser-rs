@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
 
 use crate::ast::ObjectName;
 
@@ -31,7 +31,7 @@ use super::value::escape_single_quote_string;
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum DataType {
     /// Fixed-length character type e.g. CHARACTER(10)
     Character(Option<CharacterLength>),
@@ -416,7 +416,7 @@ fn format_datetime_precision_and_tz(
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum TimezoneInfo {
     /// No information about time zone. E.g., TIMESTAMP
     None,
@@ -465,7 +465,7 @@ impl fmt::Display for TimezoneInfo {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum ExactNumberInfo {
     /// No additional information e.g. `DECIMAL`
     None,
@@ -497,7 +497,7 @@ impl fmt::Display for ExactNumberInfo {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct CharacterLength {
     /// Default (if VARYING) or maximum (if not VARYING) length
     pub length: u64,
@@ -521,7 +521,7 @@ impl fmt::Display for CharacterLength {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum CharLengthUnits {
     /// CHARACTERS unit
     Characters,

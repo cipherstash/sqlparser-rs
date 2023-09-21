@@ -25,7 +25,7 @@ use core::ops::ControlFlow;
 ///
 /// ```text
 /// #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 /// ```
 pub trait Visit {
     fn visit<V: Visitor>(&self, visitor: &mut V) -> ControlFlow<V::Break>;
@@ -41,7 +41,7 @@ pub trait Visit {
 ///
 /// ```text
 /// #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 /// ```
 pub trait VisitMut {
     fn visit<V: VisitorMut>(&mut self, visitor: &mut V) -> ControlFlow<V::Break>;

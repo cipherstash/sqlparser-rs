@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
 
 use crate::ast::*;
 
@@ -29,7 +29,7 @@ use crate::ast::*;
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Query {
     /// WITH (common table expressions, or CTEs)
     pub with: Option<With>,
@@ -78,7 +78,7 @@ impl fmt::Display for Query {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum SetExpr {
     /// Restricted SELECT .. FROM .. HAVING (no ORDER BY or set operations)
     Select(Box<Select>),
@@ -131,7 +131,7 @@ impl fmt::Display for SetExpr {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum SetOperator {
     Union,
     Except,
@@ -154,7 +154,7 @@ impl fmt::Display for SetOperator {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum SetQuantifier {
     All,
     Distinct,
@@ -179,7 +179,7 @@ impl fmt::Display for SetQuantifier {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 /// A [`TABLE` command]( https://www.postgresql.org/docs/current/sql-select.html#SQL-TABLE)
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Table {
     pub table_name: Option<String>,
     pub schema_name: Option<String>,
@@ -207,7 +207,7 @@ impl fmt::Display for Table {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Select {
     pub distinct: Option<Distinct>,
     /// MSSQL syntax: `TOP (<N>) [ PERCENT ] [ WITH TIES ]`
@@ -301,7 +301,7 @@ impl fmt::Display for Select {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct LateralView {
     /// LATERAL VIEW
     pub lateral_view: Expr,
@@ -336,7 +336,7 @@ impl fmt::Display for LateralView {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct NamedWindowDefinition(pub Ident, pub WindowSpec);
 
 impl fmt::Display for NamedWindowDefinition {
@@ -348,7 +348,7 @@ impl fmt::Display for NamedWindowDefinition {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct With {
     pub recursive: bool,
     pub cte_tables: Vec<Cte>,
@@ -372,7 +372,7 @@ impl fmt::Display for With {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Cte {
     pub alias: TableAlias,
     pub query: Box<Query>,
@@ -393,7 +393,7 @@ impl fmt::Display for Cte {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum SelectItem {
     /// Any expression, not followed by `[ AS ] alias`
     UnnamedExpr(Expr),
@@ -414,7 +414,7 @@ pub enum SelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct IdentWithAlias {
     pub ident: Ident,
     pub alias: Ident,
@@ -430,7 +430,7 @@ impl fmt::Display for IdentWithAlias {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct WildcardAdditionalOptions {
     /// `[EXCLUDE...]`.
     pub opt_exclude: Option<ExcludeSelectItem>,
@@ -471,7 +471,7 @@ impl fmt::Display for WildcardAdditionalOptions {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum ExcludeSelectItem {
     /// Single column name without parenthesis.
     ///
@@ -513,7 +513,7 @@ impl fmt::Display for ExcludeSelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum RenameSelectItem {
     /// Single column name with alias without parenthesis.
     ///
@@ -554,7 +554,7 @@ impl fmt::Display for RenameSelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct ExceptSelectItem {
     /// First guaranteed column.
     pub first_element: Ident,
@@ -589,7 +589,7 @@ impl fmt::Display for ExceptSelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct ReplaceSelectItem {
     pub items: Vec<Box<ReplaceSelectElement>>,
 }
@@ -609,7 +609,7 @@ impl fmt::Display for ReplaceSelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct ReplaceSelectElement {
     pub expr: Expr,
     pub column_name: Ident,
@@ -648,7 +648,7 @@ impl fmt::Display for SelectItem {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct TableWithJoins {
     pub relation: TableFactor,
     pub joins: Vec<Join>,
@@ -668,7 +668,7 @@ impl fmt::Display for TableWithJoins {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 #[cfg_attr(feature = "visitor", visit(with = "visit_table_factor"))]
 pub enum TableFactor {
     Table {
@@ -851,7 +851,7 @@ impl fmt::Display for TableFactor {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct TableAlias {
     pub name: Ident,
     pub columns: Vec<Ident>,
@@ -870,7 +870,7 @@ impl fmt::Display for TableAlias {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum TableVersion {
     ForSystemTimeAsOf(Expr),
 }
@@ -887,7 +887,7 @@ impl Display for TableVersion {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Join {
     pub relation: TableFactor,
     pub join_operator: JoinOperator,
@@ -983,7 +983,7 @@ impl fmt::Display for Join {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum JoinOperator {
     Inner(JoinConstraint),
     LeftOuter(JoinConstraint),
@@ -1007,7 +1007,7 @@ pub enum JoinOperator {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum JoinConstraint {
     On(Expr),
     Using(Vec<Ident>),
@@ -1019,7 +1019,7 @@ pub enum JoinConstraint {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct OrderByExpr {
     pub expr: Expr,
     /// Optional `ASC` or `DESC`
@@ -1048,7 +1048,7 @@ impl fmt::Display for OrderByExpr {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Offset {
     pub value: Expr,
     pub rows: OffsetRows,
@@ -1064,7 +1064,7 @@ impl fmt::Display for Offset {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum OffsetRows {
     /// Omitting ROW/ROWS is non-standard MySQL quirk.
     None,
@@ -1085,7 +1085,7 @@ impl fmt::Display for OffsetRows {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Fetch {
     pub with_ties: bool,
     pub percent: bool,
@@ -1107,7 +1107,7 @@ impl fmt::Display for Fetch {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct LockClause {
     pub lock_type: LockType,
     pub of: Option<ObjectName>,
@@ -1130,7 +1130,7 @@ impl fmt::Display for LockClause {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum LockType {
     Share,
     Update,
@@ -1149,7 +1149,7 @@ impl fmt::Display for LockType {
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum NonBlock {
     Nowait,
     SkipLocked,
@@ -1168,7 +1168,7 @@ impl fmt::Display for NonBlock {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum Distinct {
     /// DISTINCT
     Distinct,
@@ -1192,7 +1192,7 @@ impl fmt::Display for Distinct {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Top {
     /// SQL semantic equivalent of LIMIT but with same structure as FETCH.
     pub with_ties: bool,
@@ -1215,7 +1215,7 @@ impl fmt::Display for Top {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct Values {
     /// Was there an explicit ROWs keyword (MySQL)?
     /// <https://dev.mysql.com/doc/refman/8.0/en/values.html>
@@ -1240,7 +1240,7 @@ impl fmt::Display for Values {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct SelectInto {
     pub temporary: bool,
     pub unlogged: bool,

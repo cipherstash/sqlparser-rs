@@ -61,10 +61,8 @@ pub enum Primitive<'ast, M: Mutability<'ast>> {
 // Defines `pub enum Node<'ast> { .. }`  and `pub enum Field<'ast>{ .. }`
 include!(concat!(env!("OUT_DIR"), "/ast/generated.rs"));
 
-/// An optionally mutable reference to an element of a Vec node.
-/// It also contains the index of the element.
 #[derive(Debug)]
-pub struct ListItem<'ast, M: Mutability<'ast>>(pub usize, pub Node<'ast, M>);
+pub struct ListItem(pub usize);
 
 /// Used as a [`std::ops::ControlFlow`] value so that [`VisitorExt`] /
 /// implementations can communicate navigation instructions to
@@ -74,32 +72,6 @@ pub enum VisitOption {
     AllFields,
     /// Tells the visitor to skip children of the current node
     SkipFields,
-}
-
-/// Trait for building Node instances from a concrete AST node.
-///
-/// Intended for use only inside VisitExt implementations.
-///
-/// This trait is derived when VisitExt is derived.
-pub trait NodeBuilder<'ast> {
-    fn wrap_node(&'ast self) -> Node<'ast, ByRef>;
-
-    fn wrap_node_mut(&'ast mut self) -> Node<'ast, ByMutRef>;
-}
-
-/// Trait for building Field instances from fields of a concrete AST node.
-///
-/// Intended for use only inside VisitExt implementations.
-pub trait FieldBuilder<'ast> {
-    type NodeField<M: Mutability<'ast> + 'ast>;
-
-    fn wrap_field<F>(field: F) -> Field<'ast, ByRef>
-    where
-        Self::NodeField<ByRef>: From<F>;
-
-    fn wrap_field_mut<F>(field: F) -> Field<'ast, ByMutRef>
-    where
-        Self::NodeField<ByMutRef>: From<F>;
 }
 
 pub trait VisitExt {
@@ -173,7 +145,7 @@ pub trait VisitorExt {
     #[allow(unused_variables)]
     fn enter_list_item<'a>(
         &mut self,
-        item: &'a ListItem<'_, ByRef>,
+        item: &'a ListItem,
     ) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
@@ -182,7 +154,7 @@ pub trait VisitorExt {
     ///
     /// The index of the element is provided along with the node at that index.
     #[allow(unused_variables)]
-    fn leave_list_item<'a>(&mut self, item: &'a ListItem<'_, ByRef>) -> ControlFlow<()> {
+    fn leave_list_item<'a>(&mut self, item: &'a ListItem) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 }
@@ -218,7 +190,7 @@ pub trait VisitorExtMut {
     #[allow(unused_variables)]
     fn enter_list_item<'a>(
         &mut self,
-        item: &'a ListItem<'_, ByMutRef>,
+        item: &'a ListItem,
     ) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
@@ -227,7 +199,7 @@ pub trait VisitorExtMut {
     ///
     /// The index of the element is provided along with the node at that index.
     #[allow(unused_variables)]
-    fn leave_list_item<'a>(&mut self, item: &'a ListItem<'_, ByMutRef>) -> ControlFlow<()> {
+    fn leave_list_item<'a>(&mut self, item: &'a ListItem) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 }
@@ -240,3 +212,108 @@ pub struct NullVisitorExt;
 
 impl VisitorExt for NullVisitorExt {}
 impl VisitorExtMut for NullVisitorExt {}
+
+impl<T: VisitExt> VisitExt for Option<T> {
+    fn visit_ext<V: VisitorExt>(&self, visitor: &mut V) -> ControlFlow<(), VisitOption> {
+        match self {
+            None => ControlFlow::Continue(VisitOption::AllFields),
+            Some(t) => t.visit_ext(visitor),
+        }
+    }
+
+    fn visit_ext_mut<V: VisitorExtMut>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<(), VisitOption> {
+        match self {
+            None => ControlFlow::Continue(VisitOption::AllFields),
+            Some(t) => t.visit_ext_mut(visitor),
+        }
+    }
+}
+
+impl<'ast, T: VisitExt> VisitExt for Vec<T> {
+    fn visit_ext<V: VisitorExt>(&self, visitor: &mut V) -> ControlFlow<(), VisitOption> {
+        for (idx, item) in self.into_iter().enumerate() {
+            visitor.enter_list_item(&ListItem(idx))?;
+            item.visit_ext(visitor)?;
+            visitor.leave_list_item(&ListItem(idx))?;
+        }
+        ControlFlow::Continue(VisitOption::AllFields)
+    }
+
+    fn visit_ext_mut<V: VisitorExtMut>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<(), VisitOption> {
+        for (idx, item) in self.into_iter().enumerate() {
+            visitor.enter_list_item(&ListItem(idx))?;
+            item.visit_ext_mut(visitor)?;
+            visitor.leave_list_item(&ListItem(idx))?;
+        }
+        ControlFlow::Continue(VisitOption::AllFields)
+    }
+}
+
+impl<T: VisitExt> VisitExt for Box<T> {
+    fn visit_ext<V: VisitorExt>(&self, visitor: &mut V) -> ControlFlow<(), VisitOption> {
+        (**self).visit_ext(visitor)?;
+        ControlFlow::Continue(VisitOption::AllFields)
+    }
+
+    fn visit_ext_mut<V: VisitorExtMut>(
+        &mut self,
+        visitor: &mut V,
+    ) -> ControlFlow<(), VisitOption> {
+        (**self).visit_ext_mut(visitor)?;
+        ControlFlow::Continue(VisitOption::AllFields)
+    }
+}
+
+macro_rules! primitive_nodes {
+    ($(($t:ty, $id:ident)),+) => {
+        $(
+            #[automatically_derived]
+            impl VisitExt for $t {
+                fn visit_ext<V: VisitorExt>(&self, _: &mut V) -> ControlFlow<(), VisitOption> {
+                    ControlFlow::Continue(VisitOption::AllFields)
+                }
+
+                fn visit_ext_mut<V: VisitorExtMut>(&mut self, _: &mut V) -> ControlFlow<(), VisitOption> {
+                    ControlFlow::Continue(VisitOption::AllFields)
+                }
+            }
+
+            #[automatically_derived]
+            impl<'ast> From<$t> for Node<'ast, ByRef> {
+                fn from(value: $t) -> Self {
+                    Node::Primitive(Primitive::$id(&value))
+                }
+            }
+
+            #[automatically_derived]
+            impl<'ast> From<$t> for Node<'ast, ByMutRef> {
+                fn from(value: $t) -> Self {
+                    Node::Primitive(Primitive::$id(Rc::new(RefCell::new(&mut value))))
+                }
+            }
+        )+
+    };
+}
+
+primitive_nodes!(
+    (u8, U8),
+    (u16, U16),
+    (u32, U32),
+    (u64, U64),
+    (i8, I8),
+    (i16, I16),
+    (i32, I32),
+    (i64, I64),
+    (char, Char),
+    (bool, Bool),
+    (String, String)
+);
+
+#[cfg(feature = "bigdecimal")]
+primitive_nodes!((bigdecimal::BigDecimal, BigDecimal));

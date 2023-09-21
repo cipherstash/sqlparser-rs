@@ -29,12 +29,12 @@ use crate::ast::Ident;
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct StageParamsObject {
     pub url: Option<String>,
     pub encryption: DataLoadingOptions,
@@ -46,7 +46,7 @@ pub struct StageParamsObject {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct DataLoadingOptions {
     pub options: Vec<DataLoadingOption>,
 }
@@ -54,7 +54,7 @@ pub struct DataLoadingOptions {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub enum DataLoadingOptionType {
     STRING,
     BOOLEAN,
@@ -64,7 +64,7 @@ pub enum DataLoadingOptionType {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct DataLoadingOption {
     pub option_name: String,
     pub option_type: DataLoadingOptionType,
@@ -74,7 +74,7 @@ pub struct DataLoadingOption {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-#[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+#[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
 pub struct StageLoadSelectItem {
     pub alias: Option<Ident>,
     pub file_col_num: i32,

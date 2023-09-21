@@ -1,14 +1,14 @@
 #[cfg(feature = "visitor_ext")]
 mod generator {
+    use cfg_expr::{Expression, Predicate};
+    use ident_case::RenameRule;
+    use proc_macro2::{Span, TokenStream};
+    use quote::{quote, ToTokens, TokenStreamExt};
     use std::collections::{HashMap, HashSet};
     use std::env;
     use std::fs::{create_dir_all, File};
     use std::io::{prelude::*, Read};
     use std::path::{Path, PathBuf};
-    use cfg_expr::{Expression, Predicate};
-    use ident_case::RenameRule;
-    use proc_macro2::{Span, TokenStream};
-    use quote::{quote, ToTokens, TokenStreamExt};
     use syn::{
         ext::IdentExt,
         punctuated::Punctuated,
@@ -22,6 +22,8 @@ mod generator {
     pub(crate) fn generate_node_and_field_meta() {
         let mut node_gen = NodeScanner::new();
         node_gen.process_pub_mod(&Ident::new("ast", Span::call_site()));
+        // node_gen.process_pub_mod(&Ident::new("tokenizer", Span::call_site()));
+        // node_gen.process_pub_mod(&Ident::new("keywords", Span::call_site()));
         node_gen.nodes.sort_by(|a, b| a.ident().cmp(&b.ident()));
 
         let node_variants =
@@ -33,6 +35,29 @@ mod generator {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
                         #ident ( M::Type<crate::#path::#ident>),
+                    });
+                    ts
+                });
+
+        let from_impls =
+            node_gen
+                .nodes
+                .clone()
+                .into_iter()
+                .fold(TokenStream::new(), |mut ts, node| {
+                    let (path, ident) = node.fq_ident();
+                    ts.append_all(quote! {
+                        impl<'ast> From<&'ast crate::#path::#ident> for Node<'ast, crate::ast::visitor_ext::ByRef> {
+                            fn from(value: &'ast crate::#path::#ident) -> Self {
+                               Node::#ident(value)
+                            }
+                        }
+
+                        impl<'ast> From<&'ast mut crate::#path::#ident> for Node<'ast, crate::ast::visitor_ext::ByMutRef> {
+                            fn from(value: &'ast mut crate::#path::#ident) -> Self {
+                               Node::#ident(std::rc::Rc::new(std::cell::RefCell::new(value)))
+                            }
+                        }
                     });
                     ts
                 });
@@ -64,6 +89,8 @@ mod generator {
             pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
                 #field_variants
             }
+
+            #from_impls
 
             #[allow(unused_imports)]
             pub mod meta {
@@ -135,10 +162,7 @@ mod generator {
         }
 
         fn syn_path(&self) -> syn::Path {
-            assert!(
-                self.mod_path.len() != 0,
-                "expected mod_path to have len > 0"
-            );
+            assert_ne!(self.mod_path.len(), 0, "expected mod_path to have len > 0");
 
             let syn_path = syn::Path {
                 leading_colon: None,
@@ -323,9 +347,10 @@ mod generator {
         ) -> Vec<&'a Variant> {
             variants
                 .filter(|v| {
-                    v.attrs
-                        .iter()
-                        .any(|attr| self.retain_based_on_active_features(attr))
+                    v.attrs.len() == 0
+                        || v.attrs
+                            .iter()
+                            .all(|attr| self.retain_based_on_active_features(attr))
                 })
                 .collect::<Vec<_>>()
         }
@@ -333,9 +358,10 @@ mod generator {
         fn filter_fields<I: Iterator<Item = Field>>(&self, fields: I) -> Vec<Field> {
             fields
                 .filter(|f| {
-                    f.attrs
-                        .iter()
-                        .any(|attr| self.retain_based_on_active_features(attr))
+                    f.attrs.len() == 0
+                        || f.attrs
+                            .iter()
+                            .all(|attr| self.retain_based_on_active_features(attr))
                 })
                 .collect::<Vec<_>>()
         }
@@ -350,12 +376,12 @@ mod generator {
                                 Predicate::TargetFeature(feat) => {
                                     self.enabled_features.contains(*feat)
                                 }
-                                _ => true,
+                                _ => false,
                             }),
-                            _ => panic!("Failed to parse expression in cfg attribute"),
+                            _ => panic!("Failed to evaluate expression in cfg attribute"),
                         }
                     }
-                    _ => false,
+                    _ => panic!("Failed to parse cfg attribute"),
                 }
             } else {
                 true
@@ -367,7 +393,6 @@ mod generator {
         let mut tokens = TokenStream::new();
 
         nodes.into_iter().fold(&mut tokens, |tokens, node| {
-            let (node_path, node_ident) = node.fq_ident();
             let node_mod = node.ident_to_module_name();
             let fields_or_variants_meta: TokenStream = node.to_field_enum();
 
@@ -379,57 +404,6 @@ mod generator {
                     use crate::ast::helpers::stmt_data_loading::*;
 
                     use std::{cell::RefCell, rc::Rc};
-
-                    #[automatically_derived]
-                    impl<'ast> crate::ast::visitor_ext::FieldBuilder<'ast> for crate::#node_path::#node_ident {
-                        type NodeField<M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> = self::Field<'ast, M>;
-
-                        fn wrap_field<F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByRef>
-                        where
-                            Self::NodeField<ByRef>: From<F>,
-                        {
-                            crate::ast::visitor_ext::Field::#node_ident(field.into())
-                        }
-
-                        fn wrap_field_mut<F>(field: F) -> crate::ast::visitor_ext::Field<'ast, ByMutRef>
-                        where
-                            Self::NodeField<ByMutRef>: From<F>,
-                        {
-                            crate::ast::visitor_ext::Field::#node_ident(field.into())
-                        }
-                    }
-
-                    #[automatically_derived]
-                    impl<'ast> crate::ast::visitor_ext::NodeBuilder<'ast> for crate::#node_path::#node_ident {
-                        fn wrap_node(&'ast self) -> crate::ast::visitor_ext::Node<'ast, ByRef> {
-                            crate::ast::visitor_ext::Node::#node_ident(self)
-                        }
-
-                        fn wrap_node_mut(&'ast mut self) -> crate::ast::visitor_ext::Node<'ast, ByMutRef> {
-                            crate::ast::Node::#node_ident(Rc::new(RefCell::new(self)))
-                        }
-                    }
-
-                    #[automatically_derived]
-                    impl<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> From<self::Field<'ast, M>> for crate::ast::visitor_ext::Field<'ast, M> {
-                        fn from(field: Field<'ast, M>) -> Self {
-                            crate::ast::visitor_ext::Field::#node_ident(field)
-                        }
-                    }
-
-                    #[automatically_derived]
-                    impl<'ast> From<&'ast crate::#node_path::#node_ident> for Rc<RefCell<&'ast crate::#node_path::#node_ident>> {
-                        fn from(value: &'ast crate::#node_path::#node_ident) -> Self {
-                            Rc::new(RefCell::new(value))
-                        }
-                    }
-
-                    #[automatically_derived]
-                    impl<'ast> From<&'ast mut crate::#node_path::#node_ident> for Rc<RefCell<&'ast mut crate::#node_path::#node_ident>> {
-                        fn from(value: &'ast mut crate::#node_path::#node_ident) -> Self {
-                            Rc::new(RefCell::new(value))
-                        }
-                    }
 
                     #fields_or_variants_meta
                 }
@@ -459,9 +433,7 @@ mod generator {
                                         .expect("Failed to parse cfg_attr attribut")
                                         .into_iter()
                                         .map(|ident| ident.to_string())
-                                        .filter(|name| {
-                                            name == "VisitorExt" || name == "VisitorExtMut"
-                                        })
+                                        .filter(|name| name == "VisitExt")
                                         .count()
                                         > 0;
                                     return is_deriving_visitor_ext;
@@ -544,7 +516,7 @@ mod generator {
                             let child_module: Ident = Case::Snake.convert(ident);
 
                             quote! {
-                                #ident (M::Type<#child_module::Field<'ast, M>>),
+                                #ident (#child_module::Field<'ast, M>),
                             }
                             .into()
                         })

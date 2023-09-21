@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use sqlparser_derive::{Visit, VisitMut};
 
 #[cfg(feature = "visitor_ext")]
-use sqlparser_derive::{VisitExt, VisitorExt, VisitorExtMut};
+use sqlparser_derive::{VisitExt};
 
 /// Defines a string constant for a single keyword: `kw_def!(SELECT);`
 /// expands to `pub const SELECT = "SELECT";`
@@ -51,7 +51,7 @@ macro_rules! define_keywords {
         #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
-        #[cfg_attr(feature = "visitor_ext", derive(VisitExt, VisitorExt, VisitorExtMut))]
+        #[cfg_attr(feature = "visitor_ext", derive(VisitExt))]
         #[allow(non_camel_case_types)]
         pub enum Keyword {
             NoKeyword,

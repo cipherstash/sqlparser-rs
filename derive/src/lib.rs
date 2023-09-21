@@ -1,5 +1,7 @@
-use proc_macro2::TokenStream;
+use ident_case::RenameRule;
+use proc_macro2::{TokenStream, Span};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
+use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::{
     parse_macro_input, parse_quote, Attribute, Data, DeriveInput, Fields, GenericParam, Generics,
@@ -29,21 +31,227 @@ pub fn derive_visit_immutable(input: proc_macro::TokenStream) -> proc_macro::Tok
 
 /// Implementation of `[#derive(VisitExt)]`
 #[proc_macro_derive(VisitExt)]
-pub fn derive_visit_ext(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    quote! { }.into()
+pub fn derive_visit_ext(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = &parse_macro_input!(input as DeriveInput);
+    let name = input.ident.clone();
+
+    let generics = add_trait_bounds_for_visit_ext(input.clone().generics);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let children = visit_ext_children(&input.clone(), None);
+    let children_mut = visit_ext_children(&input, Some(quote!(mut)));
+
+    quote! {
+        impl #impl_generics sqlparser::ast::VisitExt for #name #ty_generics #where_clause {
+            fn visit_ext<V: sqlparser::ast::VisitorExt>(&self, visitor: &mut V) -> std::ops::ControlFlow<(), sqlparser::ast::VisitOption> {
+                use sqlparser::ast::{VisitExt,VisitorExt};
+                match visitor.enter_node(&sqlparser::ast::Node::#name(self)) {
+                    std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields) => {
+                        #children
+                    },
+                    std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::SkipFields) => {},
+                    _ => return std::ops::ControlFlow::Break(()),
+                }
+
+                visitor.leave_node(&sqlparser::ast::Node::#name(self))?;
+                std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields)
+            }
+
+            fn visit_ext_mut<V: sqlparser::ast::VisitorExtMut>(&mut self, visitor: &mut V) -> std::ops::ControlFlow<(), sqlparser::ast::VisitOption> {
+                use sqlparser::ast::{VisitExt,VisitorExt};
+                match visitor.enter_node(&sqlparser::ast::Node::#name(std::rc::Rc::new(std::cell::RefCell::new(self)))) {
+                    std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields) => {
+                        #children_mut
+                    },
+                    std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::SkipFields) => {},
+                    _ => return std::ops::ControlFlow::Break(()),
+                }
+
+                visitor.leave_node(&sqlparser::ast::Node::#name(std::rc::Rc::new(std::cell::RefCell::new(self))))?;
+                std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields)
+            }
+        }
+    }.into()
 }
 
-/// Implementation of `[#derive(VisitorExt)]`
-#[proc_macro_derive(VisitorExt)]
-pub fn derive_visitor_ext(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    quote! { }.into()
+fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> TokenStream {
+    let name = input.ident.clone();
+    let ty_mod_ident: Ident = Case::Snake.convert(&input.ident);
+
+    match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => {
+                let recurse = fields.named.iter().map(|f| {
+                    let field_ident = f.ident.clone().unwrap();
+                    let field_enum_variant = Case::Pascal.convert(&f.ident.clone().unwrap());
+
+                    let wrap_field: TokenStream = match modifier {
+                        Some(_) => quote! {
+                            sqlparser::ast::Field::#name(
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(
+                                    std::rc::Rc::new(
+                                        std::cell::RefCell::new(
+                                            &mut self.#field_ident
+                                        )
+                                    )
+                                )
+                            )
+                        },
+                        None => quote! {
+                            sqlparser::ast::Field::#name(
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(&self.#field_ident)
+                            )
+                        }
+                    }.into();
+
+                    quote_spanned!(f.span() =>
+                        visitor.enter_field(&#wrap_field)?;
+                        self.#field_ident.visit_ext(visitor)?;
+                        visitor.leave_field(&#wrap_field)?;
+                    )
+                });
+                quote! {
+                    #(#recurse)*
+                }
+            }
+            Fields::Unnamed(fields) => {
+                let visit = fields.unnamed.iter().enumerate().map(|(i, f)| {
+                    let index = Index::from(i);
+                    let field_enum_variant = Case::Pascal.convert(&Ident::new(&format!("Field{}", i), Span::call_site()));
+
+                    let wrap_field: TokenStream = match modifier {
+                        Some(_) => quote! {
+                            sqlparser::ast::Field::#name(
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(
+                                    std::rc::Rc::new(
+                                        std::cell::RefCell::new(&mut self.#index)
+                                    )
+                                )
+                            )
+                        },
+                        None => quote! {
+                            sqlparser::ast::Field::#name(
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(&self.#index)
+                            )
+                        }
+                    }.into();
+
+                    quote_spanned!(f.span() =>
+                        visitor.enter_field(&#wrap_field)?;
+                        self.#index.visit_ext(visitor)?;
+                        visitor.leave_field(&#wrap_field)?;
+                    )
+                });
+                quote! {
+                    #(#visit)*
+                }
+            }
+            Fields::Unit => { quote!() }
+        },
+        Data::Enum(data) => {
+            let statements = data.variants.iter().map(|v| {
+                let variant_name = &v.ident;
+                let variant_mod = Case::Snake.convert(&v.ident);
+                match &v.fields {
+                    Fields::Named(fields) => {
+                        let names = fields.named.iter().map(|f| { let ident = f.ident.clone(); ident.unwrap()});
+
+                        let visit = fields.named.iter().map(|f| {
+                            let field_ident = f.ident.clone().unwrap();
+                            let field_enum_variant = Case::Pascal.convert(&field_ident);
+
+                            let wrap_field: TokenStream = match modifier {
+                                Some(_) => quote! {
+                                    sqlparser::ast::Field::#name(
+                                        sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name(
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(
+                                                std::rc::Rc::new(
+                                                    std::cell::RefCell::new(#field_ident)
+                                                )
+                                            )
+                                        )
+                                    )
+                                },
+                                None => quote! {
+                                    sqlparser::ast::Field::#name(
+                                        sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name(
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(#field_ident)
+                                        )
+                                    )
+                                }
+                            }.into();
+
+                            quote! {
+                                visitor.enter_field(&#wrap_field)?;
+                                #field_ident.visit_ext(visitor)?;
+                                visitor.leave_field(&#wrap_field)?;
+                            }
+                        });
+
+                        quote!(
+                            Self::#variant_name { #(#names),* } => {
+                                #(#visit)*
+                            }
+                        )
+                    }
+                    Fields::Unnamed(fields) => {
+                        let visit = fields.unnamed.iter().enumerate().map(|(i, f)| {
+                            let index = Index::from(i);
+                            let field = format_ident!("f{}", index);
+                            let field_enum_variant = Case::Pascal.convert(&Ident::new(&format!("Field{}", i), Span::call_site()));
+
+                            let wrap_field: TokenStream = match modifier {
+                                Some(_) => quote! {
+                                    sqlparser::ast::Field::#name(
+                                        sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name(
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(
+                                                std::rc::Rc::new(
+                                                    std::cell::RefCell::new(#field)
+                                                )
+                                            )
+                                        )
+                                    )
+                                },
+                                None => quote! {
+                                    sqlparser::ast::Field::#name(
+                                        sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name (
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(#field)
+                                        )
+                                    )
+                                }
+                            }.into();
+
+                            quote_spanned!(f.span() =>
+                                visitor.enter_field(&#wrap_field)?;
+                                #field.visit_ext(visitor)?;
+                                visitor.leave_field(&#wrap_field)?;
+                            )
+                        });
+                        let field_names = fields.unnamed.iter().enumerate().map(|(i, _)| format_ident!("f{}", i));
+                        quote! {
+                            Self::#variant_name(#(#field_names),*)  => {
+                                #(#visit)*
+                            }
+                        }
+                    }
+                    Fields::Unit => {
+                        quote! {
+                            Self::#variant_name => {}
+                        }
+                    }
+                }
+            });
+
+            quote! {
+                match self {
+                    #(#statements),*
+                }
+            }
+        }
+        Data::Union(_) => unimplemented!(),
+    }
 }
 
-/// Implementation of `[#derive(VisitorExtMut)]`
-#[proc_macro_derive(VisitorExtMut)]
-pub fn derive_visitor_ext_mut(_input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    quote! { }.into()
-}
 
 struct VisitType {
     visit_trait: TokenStream,
@@ -152,6 +360,15 @@ fn add_trait_bounds(mut generics: Generics, VisitType{visit_trait, ..}: &VisitTy
     generics
 }
 
+fn add_trait_bounds_for_visit_ext(mut generics: Generics) -> Generics {
+    for param in &mut generics.params {
+        if let GenericParam::Type(ref mut type_param) = *param {
+            type_param.bounds.push(parse_quote!(sqlparser::ast::visitor_ext::VisitExt));
+        }
+    }
+    generics
+}
+
 // Generate the body of the visit implementation for the given type
 fn visit_children(data: &Data, VisitType{visit_trait, modifier, ..}: &VisitType) -> TokenStream {
     match data {
@@ -231,5 +448,44 @@ fn visit_children(data: &Data, VisitType{visit_trait, modifier, ..}: &VisitType)
             }
         }
         Data::Union(_) => unimplemented!(),
+    }
+}
+
+enum Case {
+    Pascal,
+    Snake,
+}
+
+impl Case {
+    fn convert(&self, ident: &Ident) -> Ident {
+        let ident = ident.unraw();
+        let ident = ident.to_string();
+        let ident = ident.trim_start_matches('_').trim_end_matches('_');
+
+        let ident = match self {
+            Case::Pascal => RenameRule::PascalCase.apply_to_field(&ident),
+            Case::Snake => RenameRule::SnakeCase.apply_to_variant(&ident),
+        };
+
+        if Case::is_keyword(&ident) {
+            Ident::new_raw(&format!("{}_", ident), Span::call_site())
+        } else {
+            Ident::new(&ident, Span::call_site())
+        }
+    }
+
+    // Shamelessly lifted from `syn` (syn does not export it)
+    fn is_keyword(ident: &str) -> bool {
+        match ident {
+            // Based on https://doc.rust-lang.org/1.65.0/reference/keywords.html
+            "abstract" | "as" | "async" | "await" | "become" | "box" | "break" | "const"
+            | "continue" | "crate" | "do" | "dyn" | "else" | "enum" | "extern" | "false"
+            | "final" | "fn" | "for" | "if" | "impl" | "in" | "let" | "loop" | "macro"
+            | "match" | "mod" | "move" | "mut" | "override" | "priv" | "pub" | "ref"
+            | "return" | "Self" | "self" | "static" | "struct" | "super" | "trait" | "true"
+            | "try" | "type" | "typeof" | "unsafe" | "unsized" | "use" | "virtual"
+            | "where" | "while" | "yield" => true,
+            _ => false,
+        }
     }
 }
