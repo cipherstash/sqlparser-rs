@@ -58,8 +58,8 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        #ident ( std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> ),
-                        // #ident ( &'ast mut crate::#path::#ident ),
+                        // #ident ( std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> ),
+                        #ident ( &'ast mut crate::#path::#ident ),
                     });
                     ts
                 });

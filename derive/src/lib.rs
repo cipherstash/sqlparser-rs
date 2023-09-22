@@ -60,10 +60,10 @@ pub fn derive_visit_ext(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 
             fn visit_ext_mut<V: sqlparser::ast::VisitorExtMut>(&mut self, visitor: &mut V) -> std::ops::ControlFlow<(), sqlparser::ast::VisitOption> {
                 use std::ops::DerefMut;
-                let rc_self = std::rc::Rc::new(std::cell::RefCell::new(self));
-                match visitor.enter_node(&sqlparser::ast::NodeMut::#name(rc_self.clone())) {
+                // let rc_self = std::rc::Rc::new(std::cell::RefCell::new(self));
+                match visitor.enter_node(&sqlparser::ast::NodeMut::#name(self)) {
                     std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields) => {
-                        match rc_self.borrow_mut().deref_mut() {
+                        match self {
                             #children_mut
                         }
                     },
@@ -71,7 +71,7 @@ pub fn derive_visit_ext(input: proc_macro::TokenStream) -> proc_macro::TokenStre
                     _ => return std::ops::ControlFlow::Break(()),
                 }
 
-                visitor.leave_node(&sqlparser::ast::NodeMut::#name(rc_self.clone()))?;
+                visitor.leave_node(&sqlparser::ast::NodeMut::#name(self))?;
                 std::ops::ControlFlow::Continue(sqlparser::ast::VisitOption::AllFields)
             }
         }
