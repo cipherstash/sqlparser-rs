@@ -78,6 +78,11 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
     let name = input.ident.clone();
     let ty_mod_ident: Ident = Case::Snake.convert(&input.ident);
 
+    let visit_fn: Ident = match modifier {
+        Some(_) => Ident::new("visit_ext_mut", Span::call_site()),
+        None => Ident::new("visit_ext", Span::call_site()),
+    };
+
     match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => {
@@ -106,7 +111,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
 
                     quote_spanned!(f.span() =>
                         visitor.enter_field(&#wrap_field)?;
-                        self.#field_ident.visit_ext(visitor)?;
+                        self.#field_ident.#visit_fn(visitor)?;
                         visitor.leave_field(&#wrap_field)?;
                     )
                 });
@@ -138,7 +143,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
 
                     quote_spanned!(f.span() =>
                         visitor.enter_field(&#wrap_field)?;
-                        self.#index.visit_ext(visitor)?;
+                        self.#index.#visit_fn(visitor)?;
                         visitor.leave_field(&#wrap_field)?;
                     )
                 });
@@ -183,7 +188,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
 
                             quote! {
                                 visitor.enter_field(&#wrap_field)?;
-                                #field_ident.visit_ext(visitor)?;
+                                #field_ident.#visit_fn(visitor)?;
                                 visitor.leave_field(&#wrap_field)?;
                             }
                         });
@@ -223,7 +228,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
 
                             quote_spanned!(f.span() =>
                                 visitor.enter_field(&#wrap_field)?;
-                                #field.visit_ext(visitor)?;
+                                #field.#visit_fn(visitor)?;
                                 visitor.leave_field(&#wrap_field)?;
                             )
                         });
