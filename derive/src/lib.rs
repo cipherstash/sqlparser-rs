@@ -105,8 +105,8 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                     let wrap_field: TokenStream = match modifier {
                         Some(_) => quote! {
                             sqlparser::ast::FieldMut::#name(
-                                // sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(#field_ident)
-                                sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field_ident)))
+                                sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(#field_ident)
+                                // sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field_ident)))
                             )
                         },
                         None => quote! {
@@ -139,8 +139,8 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                     let wrap_field: TokenStream = match modifier {
                         Some(_) => quote! {
                             sqlparser::ast::FieldMut::#name(
-                                sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field)))
-                                // sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(&mut #field)
+                                // sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field)))
+                                sqlparser::ast::meta::#ty_mod_ident::FieldMut::#field_enum_variant(#field)
                             )
                         },
                         None => quote! {
@@ -184,8 +184,8 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                                 Some(_) => quote! {
                                     sqlparser::ast::FieldMut::#name(
                                         sqlparser::ast::meta::#ty_mod_ident::FieldMut::#variant_name(
-                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field_ident)))
-                                            // sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(&mut #field_ident)
+                                            // sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field_ident)))
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(#field_ident)
                                         )
                                     )
                                 },
@@ -221,8 +221,8 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                                 Some(_) => quote! {
                                     sqlparser::ast::FieldMut::#name(
                                         sqlparser::ast::meta::#ty_mod_ident::FieldMut::#variant_name(
-                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field)))
-                                            // sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(&mut #field)
+                                            // sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(std::rc::Rc::new(std::cell::RefCell::new(#field)))
+                                            sqlparser::ast::meta::#ty_mod_ident::#variant_mod::FieldMut::#field_enum_variant(#field)
                                         )
                                     )
                                 },

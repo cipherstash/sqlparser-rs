@@ -664,7 +664,8 @@ mod generator {
                     let ident = Case::Pascal.convert(&ident);
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
+                        // #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
+                        #ident (&'ast mut #ty),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -676,8 +677,8 @@ mod generator {
                     let ident = Ident::new(&ident, Span::call_site());
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
-                        // #ident (&'ast mut #ty),
+                        // #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
+                        #ident (&'ast mut #ty),
                     }
                 })
                 .collect::<TokenStream>(),
