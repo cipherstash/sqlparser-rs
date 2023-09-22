@@ -58,7 +58,8 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        #ident ( &'ast mut crate::#path::#ident ),
+                        #ident ( std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> ),
+                        // #ident ( &'ast mut crate::#path::#ident ),
                     });
                     ts
                 });
@@ -71,11 +72,11 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        impl<'ast> From<&'ast mut crate::#path::#ident> for std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> {
-                            fn from(value: &'ast mut crate::#path::#ident) -> Self {
-                               std::rc::Rc::new(std::cell::RefCell::new(value))
-                            }
-                        }
+                        // impl<'ast> From<&'ast mut crate::#path::#ident> for std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> {
+                        //     fn from(value: &'ast mut crate::#path::#ident) -> Self {
+                        //        std::rc::Rc::new(std::cell::RefCell::new(value))
+                        //     }
+                        // }
                     });
                     ts
                 });
@@ -663,7 +664,7 @@ mod generator {
                     let ident = Case::Pascal.convert(&ident);
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (&'ast mut #ty),
+                        #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -675,7 +676,8 @@ mod generator {
                     let ident = Ident::new(&ident, Span::call_site());
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (&'ast mut #ty),
+                        #ident (std::rc::Rc<std::cell::RefCell<&'ast mut #ty>>),
+                        // #ident (&'ast mut #ty),
                     }
                 })
                 .collect::<TokenStream>(),
