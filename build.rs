@@ -64,23 +64,6 @@ mod generator {
                     ts
                 });
 
-        let from_impls =
-            node_gen
-                .nodes
-                .clone()
-                .into_iter()
-                .fold(TokenStream::new(), |mut ts, node| {
-                    let (path, ident) = node.fq_ident();
-                    ts.append_all(quote! {
-                        // impl<'ast> From<&'ast mut crate::#path::#ident> for std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> {
-                        //     fn from(value: &'ast mut crate::#path::#ident) -> Self {
-                        //        std::rc::Rc::new(std::cell::RefCell::new(value))
-                        //     }
-                        // }
-                    });
-                    ts
-                });
-
         let field_variants =
             node_gen
                 .nodes
@@ -133,8 +116,6 @@ mod generator {
             pub enum FieldMut<'ast> {
                 #field_variants_mut
             }
-
-            #from_impls
 
             #[allow(unused_imports)]
             pub mod meta {
