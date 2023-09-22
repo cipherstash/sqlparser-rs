@@ -45,7 +45,20 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        #ident ( M::Type<crate::#path::#ident>),
+                        #ident ( &'ast crate::#path::#ident ),
+                    });
+                    ts
+                });
+
+        let node_variants_mut =
+            node_gen
+                .nodes
+                .clone()
+                .into_iter()
+                .fold(TokenStream::new(), |mut ts, node| {
+                    let (path, ident) = node.fq_ident();
+                    ts.append_all(quote! {
+                        #ident ( &'ast mut crate::#path::#ident ),
                     });
                     ts
                 });
@@ -58,15 +71,9 @@ mod generator {
                 .fold(TokenStream::new(), |mut ts, node| {
                     let (path, ident) = node.fq_ident();
                     ts.append_all(quote! {
-                        impl<'ast> From<&'ast crate::#path::#ident> for Node<'ast, crate::ast::visitor_ext::ByRef> {
-                            fn from(value: &'ast crate::#path::#ident) -> Self {
-                               Node::#ident(value)
-                            }
-                        }
-
-                        impl<'ast> From<&'ast mut crate::#path::#ident> for Node<'ast, crate::ast::visitor_ext::ByMutRef> {
+                        impl<'ast> From<&'ast mut crate::#path::#ident> for std::rc::Rc<std::cell::RefCell<&'ast mut crate::#path::#ident>> {
                             fn from(value: &'ast mut crate::#path::#ident) -> Self {
-                               Node::#ident(std::rc::Rc::new(std::cell::RefCell::new(value)))
+                               std::rc::Rc::new(std::cell::RefCell::new(value))
                             }
                         }
                     });
@@ -82,7 +89,21 @@ mod generator {
                     let (_, ident) = node.fq_ident();
                     let mod_ident = node.ident_to_module_name();
                     ts.append_all(quote! {
-                        #ident ( self::meta::#mod_ident::Field<'ast, M> ),
+                        #ident ( self::meta::#mod_ident::Field<'ast> ),
+                    });
+                    ts
+                });
+
+        let field_variants_mut =
+            node_gen
+                .nodes
+                .clone()
+                .into_iter()
+                .fold(TokenStream::new(), |mut ts, node| {
+                    let (_, ident) = node.fq_ident();
+                    let mod_ident = node.ident_to_module_name();
+                    ts.append_all(quote! {
+                        #ident ( self::meta::#mod_ident::FieldMut<'ast> ),
                     });
                     ts
                 });
@@ -91,14 +112,25 @@ mod generator {
 
         let generated: TokenStream = quote! {
             #[derive(Debug)]
-            pub enum Node<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
-                Primitive(Primitive<'ast, M>),
+            pub enum Node<'ast> {
+                Primitive(Primitive<'ast>),
                 #node_variants
             }
 
             #[derive(Debug)]
-            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
+            pub enum NodeMut<'ast> {
+                Primitive(PrimitiveMut<'ast>),
+                #node_variants_mut
+            }
+
+            #[derive(Debug)]
+            pub enum Field<'ast> {
                 #field_variants
+            }
+
+            #[derive(Debug)]
+            pub enum FieldMut<'ast> {
+                #field_variants_mut
             }
 
             #from_impls
@@ -533,7 +565,21 @@ mod generator {
                             let child_module: Ident = Case::Snake.convert(ident);
 
                             quote! {
-                                #ident (#child_module::Field<'ast, M>),
+                                #ident (#child_module::Field<'ast>),
+                            }
+                            .into()
+                        })
+                        .collect::<TokenStream>();
+
+                    let parent_variants_mut: TokenStream = en
+                        .variants
+                        .keys()
+                        .into_iter()
+                        .map(|ident| -> TokenStream {
+                            let child_module: Ident = Case::Snake.convert(ident);
+
+                            quote! {
+                                #ident (#child_module::FieldMut<'ast>),
                             }
                             .into()
                         })
@@ -544,8 +590,13 @@ mod generator {
                             #children
 
                             #[derive(Debug)]
-                            pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast>> {
+                            pub enum Field<'ast> {
                                 #parent_variants
+                            }
+
+                            #[derive(Debug)]
+                            pub enum FieldMut<'ast> {
+                                #parent_variants_mut
                             }
                         }
                     } else {
@@ -553,7 +604,10 @@ mod generator {
                             #children
 
                             #[derive(Debug)]
-                            pub struct Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast>(&'ast std::marker::PhantomData<M>);
+                            pub struct Field<'ast>(&'ast std::marker::PhantomData<()>);
+
+                            #[derive(Debug)]
+                            pub struct FieldMut<'ast>(&'ast std::marker::PhantomData<()>);
                         }
                     }
                 }
@@ -568,7 +622,7 @@ mod generator {
             Fields::Unit => 0,
         };
 
-        let fields: TokenStream = match variant.1 {
+        let fields: TokenStream = match variant.1.clone() {
             Fields::Named(FieldsNamed { named, .. }) => named
                 .into_iter()
                 .map(|f| {
@@ -579,7 +633,7 @@ mod generator {
                     let ident = Case::Pascal.convert(&ident);
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (M::Type<#ty>),
+                        #ident (&'ast #ty),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -591,7 +645,37 @@ mod generator {
                     let ident = Ident::new(&ident, Span::call_site());
                     let ty = f.ty.clone();
                     quote! {
-                        #ident (M::Type<#ty>),
+                        #ident (&'ast #ty),
+                    }
+                })
+                .collect::<TokenStream>(),
+            Fields::Unit => quote! {}.into(),
+        };
+
+        let fields_mut: TokenStream = match variant.1 {
+            Fields::Named(FieldsNamed { named, .. }) => named
+                .into_iter()
+                .map(|f| {
+                    let ident = f
+                        .ident
+                        .clone()
+                        .expect("Expected an identifier for a named field");
+                    let ident = Case::Pascal.convert(&ident);
+                    let ty = f.ty.clone();
+                    quote! {
+                        #ident (&'ast mut #ty),
+                    }
+                })
+                .collect::<TokenStream>(),
+            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => unnamed
+                .into_iter()
+                .enumerate()
+                .map(|(idx, f)| {
+                    let ident = format!("Field{}", idx);
+                    let ident = Ident::new(&ident, Span::call_site());
+                    let ty = f.ty.clone();
+                    quote! {
+                        #ident (&'ast mut #ty),
                     }
                 })
                 .collect::<TokenStream>(),
@@ -602,16 +686,24 @@ mod generator {
 
         let enum_def: TokenStream = if field_count > 0 {
             quote! {
-                #[derive(Debug, Clone)]
-                pub enum Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast> {
+                #[derive(Debug)]
+                pub enum Field<'ast> {
                     #fields
+                }
+
+                #[derive(Debug)]
+                pub enum FieldMut<'ast> {
+                    #fields_mut
                 }
             }
             .into()
         } else {
             quote! {
-                #[derive(Debug, Clone)]
-                pub struct Field<'ast, M: crate::ast::visitor_ext::Mutability<'ast> + 'ast>(&'ast std::marker::PhantomData<M>);
+                #[derive(Debug)]
+                pub struct Field<'ast>(&'ast std::marker::PhantomData<()>);
+
+                #[derive(Debug)]
+                pub struct FieldMut<'ast>(&'ast std::marker::PhantomData<()>);
             }.into()
         };
 

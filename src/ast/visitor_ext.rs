@@ -1,61 +1,43 @@
 use std::ops::ControlFlow;
 
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
+use std::fmt::Debug;
 
-mod sealed {
-    pub trait Sealed {}
-}
-
-use self::sealed::Sealed;
-
-/// Marker type to indicate a type that is an immutable reference.
-#[derive(Debug, Clone)]
-pub struct ByRef;
-
-/// Marker type to indicate a type that is a mutable reference.
-#[derive(Debug, Clone)]
-pub struct ByMutRef;
-
-/// Trait so that Node, Field & Primitive can be generic over mutability.
-///
-/// This trait is *sealed*: the list of implementors below is total.
-pub trait Mutability<'a>: Sealed
-where
-    Self: Debug,
-{
-    type Type<T: 'a + Debug>: Debug + 'a;
-}
-
-impl Sealed for ByRef {}
-impl Sealed for ByMutRef {}
-
-impl<'a> Mutability<'a> for ByRef {
-    type Type<T: 'a + Debug> = &'a T;
-}
-
-impl<'a> Mutability<'a> for ByMutRef {
-    type Type<T: 'a + Debug> = Rc<RefCell<&'a mut T>>;
-}
-
-/// A optionally mutable reference to an AST node that contains a value of a
-/// primitive type.
-#[derive(Debug, Clone)]
-pub enum Primitive<'ast, M: Mutability<'ast>> {
-    String(M::Type<String>),
-    Char(M::Type<char>),
-    Bool(M::Type<bool>),
-    F32(M::Type<f32>),
-    F64(M::Type<f64>),
-    U8(M::Type<u8>),
-    U16(M::Type<u16>),
-    U32(M::Type<u32>),
-    U64(M::Type<u64>),
-    I8(M::Type<i8>),
-    I16(M::Type<i16>),
-    I32(M::Type<i32>),
-    I64(M::Type<i64>),
+#[derive(Debug)]
+pub enum Primitive<'ast> {
+    String(&'ast String),
+    Char(&'ast char),
+    Bool(&'ast bool),
+    F32(&'ast f32),
+    F64(&'ast f64),
+    U8(&'ast u8),
+    U16(&'ast u16),
+    U32(&'ast u32),
+    U64(&'ast u64),
+    I8(&'ast i8),
+    I16(&'ast i16),
+    I32(&'ast i32),
+    I64(&'ast i64),
     #[cfg(feature = "bigdecimal")]
-    BigDecimal(M::Type<bigdecimal::BigDecimal>),
+    BigDecimal(&'ast bigdecimal::BigDecimal),
+}
+
+#[derive(Debug)]
+pub enum PrimitiveMut<'ast> {
+    String(&'ast mut String),
+    Char(&'ast mut char),
+    Bool(&'ast mut bool),
+    F32(&'ast mut f32),
+    F64(&'ast mut f64),
+    U8(&'ast mut u8),
+    U16(&'ast mut u16),
+    U32(&'ast mut u32),
+    U64(&'ast mut u64),
+    I8(&'ast mut i8),
+    I16(&'ast mut i16),
+    I32(&'ast mut i32),
+    I64(&'ast mut i64),
+    #[cfg(feature = "bigdecimal")]
+    BigDecimal(&'ast mut bigdecimal::BigDecimal),
 }
 
 // Defines `pub enum Node<'ast> { .. }`  and `pub enum Field<'ast>{ .. }`
@@ -117,25 +99,25 @@ pub trait VisitExt {
 pub trait VisitorExt {
     /// Called before entering a node
     #[allow(unused_variables)]
-    fn enter_node<'a>(&mut self, node: &'a Node<'_, ByRef>) -> ControlFlow<(), VisitOption> {
+    fn enter_node<'a>(&mut self, node: &'a Node<'_>) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
 
     /// Called after leaving a node
     #[allow(unused_variables)]
-    fn leave_node<'a>(&mut self, node: &'a Node<'_, ByRef>) -> ControlFlow<()> {
+    fn leave_node<'a>(&mut self, node: &'a Node<'_>) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 
     /// Called before entering a field of a node
     #[allow(unused_variables)]
-    fn enter_field<'a>(&mut self, field: &'a Field<'_, ByRef>) -> ControlFlow<(), VisitOption> {
+    fn enter_field<'a>(&mut self, field: &'a Field<'_>) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
 
     /// Called after leaving a field of a node
     #[allow(unused_variables)]
-    fn leave_field<'a>(&mut self, field: &'a Field<'_, ByRef>) -> ControlFlow<()> {
+    fn leave_field<'a>(&mut self, field: &'a Field<'_>) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 
@@ -162,25 +144,25 @@ pub trait VisitorExt {
 pub trait VisitorExtMut {
     /// Called before entering a node
     #[allow(unused_variables)]
-    fn enter_node<'a>(&mut self, node: &'a Node<'_, ByMutRef>) -> ControlFlow<(), VisitOption> {
+    fn enter_node<'a>(&mut self, node: &'a NodeMut<'_>) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
 
     /// Called after leaving a node
     #[allow(unused_variables)]
-    fn leave_node<'a>(&mut self, node: &'a Node<'_, ByMutRef>) -> ControlFlow<()> {
+    fn leave_node<'a>(&mut self, node: &'a NodeMut<'_>) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 
     /// Called before entering a field of a node
     #[allow(unused_variables)]
-    fn enter_field<'a>(&mut self, field: &'a Field<'_, ByMutRef>) -> ControlFlow<(), VisitOption> {
+    fn enter_field<'a>(&mut self, field: &'a FieldMut<'_>) -> ControlFlow<(), VisitOption> {
         ControlFlow::Continue(VisitOption::AllFields)
     }
 
     /// Called after leaving a field of a node
     #[allow(unused_variables)]
-    fn leave_field<'a>(&mut self, field: &'a Field<'_, ByMutRef>) -> ControlFlow<()> {
+    fn leave_field<'a>(&mut self, field: &'a FieldMut<'_>) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
 
@@ -285,16 +267,16 @@ macro_rules! primitive_nodes {
             }
 
             #[automatically_derived]
-            impl<'ast> From<$t> for Node<'ast, ByRef> {
-                fn from(value: $t) -> Self {
-                    Node::Primitive(Primitive::$id(&value))
+            impl<'ast> From<&'ast $t> for Node<'ast> {
+                fn from(value: &'ast $t) -> Self {
+                    Node::Primitive(Primitive::$id(value))
                 }
             }
 
             #[automatically_derived]
-            impl<'ast> From<$t> for Node<'ast, ByMutRef> {
-                fn from(value: $t) -> Self {
-                    Node::Primitive(Primitive::$id(Rc::new(RefCell::new(&mut value))))
+            impl<'ast> From<&'ast mut $t> for NodeMut<'ast> {
+                fn from(value: &'ast mut $t) -> Self {
+                    NodeMut::Primitive(PrimitiveMut::$id(value))
                 }
             }
         )+
