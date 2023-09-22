@@ -83,6 +83,12 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
         None => Ident::new("visit_ext", Span::call_site()),
     };
 
+    let ref_kind: TokenStream = if modifier.is_some() {
+        quote! { mut }
+    } else {
+        quote! { ref }
+    };
+
     match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => {
@@ -96,7 +102,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                                 sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(
                                     std::rc::Rc::new(
                                         std::cell::RefCell::new(
-                                            &mut self.#field_ident
+                                            &mut #field_ident
                                         )
                                     )
                                 )
@@ -104,51 +110,65 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                         },
                         None => quote! {
                             sqlparser::ast::Field::#name(
-                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(&self.#field_ident)
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(#field_ident)
                             )
                         }
                     }.into();
 
                     quote_spanned!(f.span() =>
                         visitor.enter_field(&#wrap_field)?;
-                        self.#field_ident.#visit_fn(visitor)?;
+                        #field_ident.#visit_fn(visitor)?;
                         visitor.leave_field(&#wrap_field)?;
                     )
                 });
+
+                let field_names = fields.named.iter().map(|f| { let ident = f.ident.clone(); ident.unwrap()});
                 quote! {
-                    #(#recurse)*
+                    match self {
+                        Self{#(#ref_kind #field_names),*} => {
+                            #(#recurse)*
+                        }
+                    }
                 }
             }
             Fields::Unnamed(fields) => {
                 let visit = fields.unnamed.iter().enumerate().map(|(i, f)| {
-                    let index = Index::from(i);
                     let field_enum_variant = Case::Pascal.convert(&Ident::new(&format!("Field{}", i), Span::call_site()));
+
+                    let field = Ident::new(&format!("f{}", i), Span::call_site());
 
                     let wrap_field: TokenStream = match modifier {
                         Some(_) => quote! {
                             sqlparser::ast::Field::#name(
                                 sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(
                                     std::rc::Rc::new(
-                                        std::cell::RefCell::new(&mut self.#index)
+                                        std::cell::RefCell::new(&mut #field)
                                     )
                                 )
                             )
                         },
                         None => quote! {
                             sqlparser::ast::Field::#name(
-                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(&self.#index)
+                                sqlparser::ast::meta::#ty_mod_ident::Field::#field_enum_variant(#field)
                             )
                         }
                     }.into();
 
+
                     quote_spanned!(f.span() =>
                         visitor.enter_field(&#wrap_field)?;
-                        self.#index.#visit_fn(visitor)?;
+                        #field.#visit_fn(visitor)?;
                         visitor.leave_field(&#wrap_field)?;
                     )
                 });
+
+                let field_names = fields.unnamed.iter().enumerate().map(|(idx,_)| { Ident::new(&format!("f{}", idx), Span::call_site()) });
                 quote! {
-                    #(#visit)*
+                    match self {
+                        Self(#(#ref_kind #field_names),*) => {
+                            #(#visit)*
+                        }
+                    }
                 }
             }
             Fields::Unit => { quote!() }
@@ -171,7 +191,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                                         sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name(
                                             sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(
                                                 std::rc::Rc::new(
-                                                    std::cell::RefCell::new(#field_ident)
+                                                    std::cell::RefCell::new(&mut #field_ident)
                                                 )
                                             )
                                         )
@@ -194,7 +214,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                         });
 
                         quote!(
-                            Self::#variant_name { #(#names),* } => {
+                            Self::#variant_name { #(#ref_kind #names),* } => {
                                 #(#visit)*
                             }
                         )
@@ -211,7 +231,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                                         sqlparser::ast::meta::#ty_mod_ident::Field::#variant_name(
                                             sqlparser::ast::meta::#ty_mod_ident::#variant_mod::Field::#field_enum_variant(
                                                 std::rc::Rc::new(
-                                                    std::cell::RefCell::new(#field)
+                                                    std::cell::RefCell::new(&mut #field)
                                                 )
                                             )
                                         )
@@ -234,7 +254,7 @@ fn visit_ext_children(input: &DeriveInput, modifier: Option<TokenStream>) -> Tok
                         });
                         let field_names = fields.unnamed.iter().enumerate().map(|(i, _)| format_ident!("f{}", i));
                         quote! {
-                            Self::#variant_name(#(#field_names),*)  => {
+                            Self::#variant_name(#(#ref_kind #field_names),*)  => {
                                 #(#visit)*
                             }
                         }

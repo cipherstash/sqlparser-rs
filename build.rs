@@ -25,7 +25,10 @@ mod generator {
         node_gen.process_pub_mod(&Ident::new("tokenizer", Span::call_site()));
 
         // Handle sqlparser::keywords mod specially.
-        // It defines the enum using a macro which we cannot parse easily.
+        // It defines the enum using a macro which we cannot parse easily -
+        // however, we know It makes an enum called Ketyword which is depended
+        // upon by other nodes. So we'll add it to our list of nodes. We'll
+        // ignore the fields.
         node_gen.nodes.push(NodeInfo::EnumNode(EnumInfo {
             path: syn::parse_quote! { sqlparser::keywords },
             ident: Ident::new("Keyword", Span::call_site()),
