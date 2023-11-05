@@ -2838,6 +2838,8 @@ impl<'a> Parser<'a> {
             self.parse_create_type()
         } else if self.parse_keyword(Keyword::PROCEDURE) {
             self.parse_create_procedure(or_alter)
+        } else if self.parse_keyword(Keyword::EXTENSION) {
+            self.parse_create_extension()
         } else {
             self.expected("an object type after CREATE", self.peek_token())
         }
@@ -3019,6 +3021,16 @@ impl<'a> Parser<'a> {
             if_not_exists: ine,
             location,
             managed_location,
+        })
+    }
+
+    pub fn parse_create_extension(&mut self) -> Result<Statement, ParserError> {
+        let if_not_exists = self.parse_keywords(&[Keyword::IF, Keyword::NOT, Keyword::EXISTS]);
+        let name = self.parse_object_name()?;
+
+        Ok(Statement::CreateExtension {
+            if_not_exists,
+            name,
         })
     }
 

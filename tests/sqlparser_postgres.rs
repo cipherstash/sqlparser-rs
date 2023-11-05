@@ -3502,3 +3502,35 @@ fn parse_join_constraint_unnest_alias() {
         }]
     );
 }
+
+#[test]
+fn parse_create_extension() {
+    let stmt = pg().verified_stmt("CREATE EXTENSION some_extension");
+
+    match stmt {
+        Statement::CreateExtension {
+            if_not_exists,
+            name,
+        } => {
+            assert!(!if_not_exists);
+            assert_eq!(name, ObjectName(vec!["some_extension".into()]))
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn parse_create_extension_if_not_exists() {
+    let stmt = pg().verified_stmt("CREATE EXTENSION IF NOT EXISTS some_extension");
+
+    match stmt {
+        Statement::CreateExtension {
+            if_not_exists,
+            name,
+        } => {
+            assert!(if_not_exists);
+            assert_eq!(name, ObjectName(vec!["some_extension".into()]))
+        }
+        _ => unreachable!(),
+    }
+}

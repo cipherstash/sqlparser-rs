@@ -1817,6 +1817,13 @@ pub enum Statement {
         location: Option<String>,
         managed_location: Option<String>,
     },
+    // this is only partial support
+    // https://www.postgresql.org/docs/current/sql-createextension.html
+    // TODO: should new nodes have location info?
+    CreateExtension {
+        if_not_exists: bool,
+        name: ObjectName,
+    },
     /// ```sql
     /// CREATE FUNCTION
     /// ```
@@ -2381,6 +2388,18 @@ impl fmt::Display for Statement {
                     write!(f, " MANAGEDLOCATION '{ml}'")?;
                 }
                 Ok(())
+            }
+            Statement::CreateExtension {
+                if_not_exists,
+                name,
+            } => {
+                write!(f, "CREATE EXTENSION")?;
+
+                if *if_not_exists {
+                    write!(f, " IF NOT EXISTS")?;
+                }
+
+                write!(f, " {name}")
             }
             Statement::CreateFunction {
                 or_replace,

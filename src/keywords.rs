@@ -257,6 +257,7 @@ define_keywords!(
     EXPANSION,
     EXPLAIN,
     EXTENDED,
+    EXTENSION,
     EXTERNAL,
     EXTRACT,
     FAIL,
