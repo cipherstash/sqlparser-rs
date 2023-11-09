@@ -3534,3 +3534,17 @@ fn parse_create_extension_if_not_exists() {
         _ => unreachable!(),
     }
 }
+
+// TODO: tests for all ops that we need to support
+#[test]
+fn parse_create_operator() {
+    // let stmt = pg().verified_stmt("CREATE OPERATOR = (PROCEDURE=\"ore_64_8_v1_eq\", LEFTARG=ore_64_8_v1, RIGHTARG=ore_64_8_v1, NEGATOR = <>, RESTRICT = eqsel, JOIN = eqjoinsel, HASHES, MERGES)");
+    let stmt = pg().verified_stmt("CREATE OPERATOR = ()");
+
+    match stmt {
+        Statement::CreateOperator { name } => {
+            assert_eq!(name, "=");
+        }
+        _ => unreachable!(),
+    }
+}

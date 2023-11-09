@@ -2840,6 +2840,8 @@ impl<'a> Parser<'a> {
             self.parse_create_procedure(or_alter)
         } else if self.parse_keyword(Keyword::EXTENSION) {
             self.parse_create_extension()
+        } else if self.parse_keyword(Keyword::OPERATOR) {
+            self.parse_create_operator()
         } else {
             self.expected("an object type after CREATE", self.peek_token())
         }
@@ -3032,6 +3034,25 @@ impl<'a> Parser<'a> {
             if_not_exists,
             name,
         })
+    }
+
+    pub fn parse_create_operator(&mut self) -> Result<Statement, ParserError> {
+        let token = self.peek_token().token;
+        println!("token: {token:#?}");
+
+        let name = match token {
+            Token::Eq => {
+                self.next_token();
+                token.to_string()
+            }
+            _ => todo!("handle other ops and invalid tokens"),
+        };
+
+        self.expect_token(&Token::LParen)?;
+
+        self.expect_token(&Token::RParen)?;
+
+        Ok(Statement::CreateOperator { name })
     }
 
     pub fn parse_optional_create_function_using(

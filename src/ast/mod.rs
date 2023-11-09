@@ -1593,6 +1593,7 @@ pub enum Statement {
         operation: AlterIndexOperation,
     },
     /// ALTER VIEW
+    // similar maybe
     AlterView {
         /// View name
         #[cfg_attr(feature = "visitor", visit(with = "visit_relation"))]
@@ -1839,6 +1840,10 @@ pub enum Statement {
         return_type: Option<DataType>,
         /// Optional parameters.
         params: CreateFunctionBody,
+    },
+    CreateOperator {
+        name: String,
+        // options: CreateOperatorOptionList,
     },
     /// ```sql
     /// CREATE PROCEDURE
@@ -2422,6 +2427,14 @@ impl fmt::Display for Statement {
                     write!(f, " RETURNS {return_type}")?;
                 }
                 write!(f, "{params}")?;
+                Ok(())
+            }
+            Statement::CreateOperator { name } => {
+                write!(f, "CREATE OPERATOR")?;
+                write!(f, " {name} (")?;
+
+                write!(f, ")")?;
+
                 Ok(())
             }
             Statement::CreateProcedure {
