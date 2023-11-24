@@ -2918,11 +2918,6 @@ impl fmt::Display for Statement {
                     priority,
                     insert_alias,
                 } = insert;
-                let table_name = if let Some(alias) = table_alias {
-                    format!("{table_name} AS {alias}")
-                } else {
-                    table_name.to_string()
-                };
 
                 if let Some(action) = or {
                     write!(f, "INSERT OR {action} INTO {table_name} ")?;
@@ -2945,6 +2940,10 @@ impl fmt::Display for Statement {
                         int = if *into { " INTO" } else { "" },
                         tbl = if *table { " TABLE" } else { "" },
                     )?;
+
+                    if let Some(table_alias) = table_alias {
+                        write!(f, "AS {table_alias} ")?;
+                    }
                 }
                 if !columns.is_empty() {
                     write!(f, "({}) ", display_comma_separated(columns))?;
