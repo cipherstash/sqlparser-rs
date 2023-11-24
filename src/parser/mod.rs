@@ -7105,6 +7105,15 @@ impl<'a> Parser<'a> {
             // Hive lets you put table here regardless
             let table = self.parse_keyword(Keyword::TABLE);
             let table_name = self.parse_object_name()?;
+
+            let is_postgresql = dialect_of!(self is PostgreSqlDialect);
+
+            let table_alias = if is_postgresql {
+                self.parse_insert_table_alias()?
+            } else {
+                None
+            };
+
             let is_mysql = dialect_of!(self is MySqlDialect);
 
             let is_default_values = self.parse_keywords(&[Keyword::DEFAULT, Keyword::VALUES]);
@@ -7189,6 +7198,7 @@ impl<'a> Parser<'a> {
             Ok(Statement::Insert {
                 or,
                 table_name,
+                table_alias,
                 ignore,
                 into,
                 overwrite,
@@ -7201,6 +7211,16 @@ impl<'a> Parser<'a> {
                 returning,
             })
         }
+    }
+
+    pub fn parse_insert_table_alias(&mut self) -> Result<Option<Ident>, ParserError> {
+        let table_alias = if self.parse_keyword(Keyword::AS) {
+            Some(self.parse_identifier()?)
+        } else {
+            None
+        };
+
+        Ok(table_alias)
     }
 
     pub fn parse_update(&mut self) -> Result<Statement, ParserError> {
