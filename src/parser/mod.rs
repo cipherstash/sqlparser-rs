@@ -6013,6 +6013,22 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    pub fn parse_operator(&mut self) -> Option<BinaryOperator> {
+        let token = self.next_token();
+        match token.token {
+            Token::Eq => Some(BinaryOperator::Eq),
+            Token::Neq => Some(BinaryOperator::NotEq),
+            Token::Lt => Some(BinaryOperator::Lt),
+            Token::LtEq => Some(BinaryOperator::LtEq),
+            Token::Gt => Some(BinaryOperator::Gt),
+            _ => None,
+
+            // TODO: Handle all the other operators
+            // Postgres needs it for ORDER BY x USING <op>
+            // CREATE OPERATOR is also currently not supported
+        }
+    }
+
     pub fn parse_set_operator(&mut self, token: &Token) -> Option<SetOperator> {
         match token {
             Token::Word(w) if w.keyword == Keyword::UNION => Some(SetOperator::Union),
@@ -7105,6 +7121,15 @@ impl<'a> Parser<'a> {
             // Hive lets you put table here regardless
             let table = self.parse_keyword(Keyword::TABLE);
             let table_name = self.parse_object_name()?;
+
+            let is_postgresql = dialect_of!(self is PostgreSqlDialect);
+
+            let table_alias = if is_postgresql {
+                self.parse_insert_table_alias()?
+            } else {
+                None
+            };
+
             let is_mysql = dialect_of!(self is MySqlDialect);
 
             let is_default_values = self.parse_keywords(&[Keyword::DEFAULT, Keyword::VALUES]);
@@ -7189,6 +7214,7 @@ impl<'a> Parser<'a> {
             Ok(Statement::Insert {
                 or,
                 table_name,
+                table_alias,
                 ignore,
                 into,
                 overwrite,
@@ -7201,6 +7227,16 @@ impl<'a> Parser<'a> {
                 returning,
             })
         }
+    }
+
+    pub fn parse_insert_table_alias(&mut self) -> Result<Option<Ident>, ParserError> {
+        let table_alias = if self.parse_keyword(Keyword::AS) {
+            Some(self.parse_identifier()?)
+        } else {
+            None
+        };
+
+        Ok(table_alias)
     }
 
     pub fn parse_update(&mut self) -> Result<Statement, ParserError> {
@@ -7487,7 +7523,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /// Parse an expression, optionally followed by ASC or DESC (used in ORDER BY)
+    /// Parse an expression, optionally followed by ASC, DESC or USING (used in ORDER BY)
     pub fn parse_order_by_expr(&mut self) -> Result<OrderByExpr, ParserError> {
         let expr = self.parse_expr()?;
 
@@ -7495,6 +7531,12 @@ impl<'a> Parser<'a> {
             Some(true)
         } else if self.parse_keyword(Keyword::DESC) {
             Some(false)
+        } else {
+            None
+        };
+
+        let using = if dialect_of!(self is PostgreSqlDialect | GenericDialect) && self.parse_keyword(Keyword::USING) {
+            self.parse_operator()
         } else {
             None
         };
@@ -7511,6 +7553,7 @@ impl<'a> Parser<'a> {
             expr,
             asc,
             nulls_first,
+            using,
         })
     }
 
