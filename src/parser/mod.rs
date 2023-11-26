@@ -2336,6 +2336,9 @@ impl<'a> Parser<'a> {
             Token::CaretAt if dialect_of!(self is PostgreSqlDialect | GenericDialect) => {
                 Some(BinaryOperator::PGStartsWith)
             }
+            Token::BidirectionalArrow if dialect_of!(self is PostgreSqlDialect | GenericDialect) => {
+                Some(BinaryOperator::PGGeoDistance)
+            },
             Token::Tilde => Some(BinaryOperator::PGRegexMatch),
             Token::TildeAsterisk => Some(BinaryOperator::PGRegexIMatch),
             Token::ExclamationMarkTilde => Some(BinaryOperator::PGRegexNotMatch),
@@ -2789,7 +2792,8 @@ impl<'a> Parser<'a> {
             | Token::DoubleTildeAsterisk
             | Token::ExclamationMarkDoubleTilde
             | Token::ExclamationMarkDoubleTildeAsterisk
-            | Token::Spaceship => Ok(20),
+            | Token::Spaceship
+            | Token::BidirectionalArrow => Ok(20),
             Token::Pipe => Ok(21),
             Token::Caret | Token::Sharp | Token::ShiftRight | Token::ShiftLeft => Ok(22),
             Token::Ampersand => Ok(23),

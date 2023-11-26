@@ -3822,3 +3822,33 @@ fn parse_select_order_by_using_nulls_last() {
         select.order_by
     );
 }
+
+#[test]
+fn parse_select_with_biderectional_arrow() {
+    pg_and_generic().verified_query("SELECT location <-> '(101,456)'::point");
+}
+
+#[test]
+fn parse_query_with_biderectional_arrow() {
+    let select: Query = pg_and_generic()
+        .verified_query("SELECT name, email FROM users ORDER BY location <-> '(101,456)'::point");
+
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::BinaryOp {
+                left: Box::new(Expr::Identifier(Ident::new("location"))),
+                op: BinaryOperator::PGGeoDistance,
+                right: Box::new(Expr::Cast {
+                    expr: Box::new(Expr::Value(Value::SingleQuotedString("(101,456)".into()))),
+                    data_type: DataType::new_custom("point", vec![]),
+                    format: None,
+                    kind: CastKind::DoubleColon,
+                }),
+            },
+            asc: None,
+            nulls_first: None,
+            using: None,
+        }],
+        select.order_by
+    );
+}
