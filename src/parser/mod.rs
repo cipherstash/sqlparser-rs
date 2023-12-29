@@ -5643,7 +5643,6 @@ impl<'a> Parser<'a> {
                 }
             }
         } else if self.parse_keyword(Keyword::DISABLE) {
-<<<<<<< HEAD
             if self.parse_keywords(&[Keyword::ROW, Keyword::LEVEL, Keyword::SECURITY]) {
                 AlterTableOperation::DisableRowLevelSecurity {}
             } else if self.parse_keyword(Keyword::RULE) {
@@ -5682,24 +5681,6 @@ impl<'a> Parser<'a> {
             } else {
                 return self.expected(
                     "ALWAYS, REPLICA, ROW LEVEL SECURITY, RULE, or TRIGGER after ENABLE",
-=======
-            if self.parse_keyword(Keyword::TRIGGER) {
-                // let all = self.parse_keyword(Keyword::ALL);
-                // let user = self.parse_keyword(Keyword::ALL);
-                let name = self.parse_identifier()?;
-
-                // println!("parse all: {}", all);
-
-                AlterTableOperation::DisableTrigger { name }
-            } else if self.parse_keyword(Keyword::RULE) {
-                let name = self.parse_identifier()?;
-                AlterTableOperation::DisableRule { name }
-            } else if self.parse_keyword(Keyword::ROW) {
-                AlterTableOperation::DisableRowLevelSecurity {}
-            } else {
-                return self.expected(
-                    "TRIGGER, RULE or ROW LEVEL SECURITY after DISABLE",
->>>>>>> ce01682 (Support for PG DISABLE)
                     self.peek_token(),
                 );
             }

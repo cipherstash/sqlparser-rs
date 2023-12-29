@@ -48,7 +48,6 @@ pub enum AlterTableOperation {
         /// MySQL `ALTER TABLE` only  [FIRST | AFTER column_name]
         column_position: Option<MySQLColumnPosition>,
     },
-<<<<<<< HEAD
     /// `DISABLE ROW LEVEL SECURITY`
     ///
     /// Note: this is a PostgreSQL-specific operation.
@@ -61,20 +60,6 @@ pub enum AlterTableOperation {
     ///
     /// Note: this is a PostgreSQL-specific operation.
     DisableTrigger { name: Ident },
-=======
-    /// DISABLE TRIGGER [ trigger_name | ALL | USER ]
-    /// DISABLE RULE rewrite_rule_name
-    /// DISABLE ROW LEVEL SECURITY
-    ///
-    /// Note: this is a PostgreSQL-specific operation.
-    DisableTrigger {
-        name: Ident,
-    },
-    DisableRule {
-        name: Ident,
-    },
-    DisableRowLevelSecurity,
->>>>>>> ce01682 (Support for PG DISABLE)
     /// `DROP CONSTRAINT [ IF EXISTS ] <name>`
     DropConstraint {
         if_exists: bool,
@@ -139,7 +124,9 @@ pub enum AlterTableOperation {
         new_column_name: Ident,
     },
     /// `RENAME TO <table_name>`
-    RenameTable { table_name: ObjectName },
+    RenameTable {
+        table_name: ObjectName,
+    },
     // CHANGE [ COLUMN ] <old_name> <new_name> <data_type> [ <options> ]
     ChangeColumn {
         old_name: Ident,
@@ -160,7 +147,10 @@ pub enum AlterTableOperation {
     /// `RENAME CONSTRAINT <old_constraint_name> TO <new_constraint_name>`
     ///
     /// Note: this is a PostgreSQL-specific operation.
-    RenameConstraint { old_name: Ident, new_name: Ident },
+    RenameConstraint {
+        old_name: Ident,
+        new_name: Ident,
+    },
     /// `ALTER [ COLUMN ]`
     AlterColumn {
         column_name: Ident,
@@ -218,24 +208,14 @@ impl fmt::Display for AlterTableOperation {
             AlterTableOperation::AlterColumn { column_name, op } => {
                 write!(f, "ALTER COLUMN {column_name} {op}")
             }
-<<<<<<< HEAD
             AlterTableOperation::DisableRowLevelSecurity => {
                 write!(f, "DISABLE ROW LEVEL SECURITY")
-=======
-            AlterTableOperation::DisableTrigger { name } => {
-                write!(f, "DISABLE TRIGGER {name}")
->>>>>>> ce01682 (Support for PG DISABLE)
             }
             AlterTableOperation::DisableRule { name } => {
                 write!(f, "DISABLE RULE {name}")
             }
-<<<<<<< HEAD
             AlterTableOperation::DisableTrigger { name } => {
                 write!(f, "DISABLE TRIGGER {name}")
-=======
-            AlterTableOperation::DisableRowLevelSecurity => {
-                write!(f, "DISABLE ROW LEVEL SECURITY")
->>>>>>> ce01682 (Support for PG DISABLE)
             }
             AlterTableOperation::DropPartitions {
                 partitions,
