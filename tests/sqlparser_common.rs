@@ -108,20 +108,35 @@ fn parse_insert_values() {
 }
 
 #[test]
+fn parse_replace_into() {
+    let dialect = PostgreSqlDialect {};
+    let sql = "REPLACE INTO public.customer (id, name, active) VALUES (1, 2, 3)";
+
+    assert_eq!(
+        ParserError::ParserError("Unsupported statement REPLACE at Line: 1, Column 9".to_string()),
+        Parser::parse_sql(&dialect, sql,).unwrap_err(),
+    )
+}
+
+#[test]
 fn parse_insert_default_values() {
     let insert_with_default_values = verified_stmt("INSERT INTO test_table DEFAULT VALUES");
 
     match insert_with_default_values {
         Statement::Insert {
+            after_columns,
             columns,
             on,
+            partitioned,
             returning,
             source,
             table_name,
             ..
         } => {
             assert_eq!(columns, vec![]);
+            assert_eq!(after_columns, vec![]);
             assert_eq!(on, None);
+            assert_eq!(partitioned, None);
             assert_eq!(returning, None);
             assert_eq!(source, None);
             assert_eq!(table_name, ObjectName(vec!["test_table".into()]));
@@ -134,8 +149,10 @@ fn parse_insert_default_values() {
 
     match insert_with_default_values_and_returning {
         Statement::Insert {
+            after_columns,
             columns,
             on,
+            partitioned,
             returning,
             source,
             table_name,
@@ -151,25 +168,57 @@ fn parse_insert_default_values() {
     }
 
     let insert_with_default_values_and_on_conflict =
-        verified_stmt("INSERT INTO test_table DEFAULT VALUES  ON CONFLICT DO NOTHING");
+        verified_stmt("INSERT INTO test_table DEFAULT VALUES ON CONFLICT DO NOTHING");
 
     match insert_with_default_values_and_on_conflict {
         Statement::Insert {
+            after_columns,
             columns,
             on,
+            partitioned,
             returning,
             source,
             table_name,
             ..
         } => {
+            assert_eq!(after_columns, vec![]);
             assert_eq!(columns, vec![]);
             assert!(on.is_some());
+            assert_eq!(partitioned, None);
             assert_eq!(returning, None);
             assert_eq!(source, None);
             assert_eq!(table_name, ObjectName(vec!["test_table".into()]));
         }
         _ => unreachable!(),
     }
+
+    let insert_with_columns_and_default_values = "INSERT INTO test_table (test_col) DEFAULT VALUES";
+    assert_eq!(
+        ParserError::ParserError(
+            "Expected SELECT, VALUES, or a subquery in the query body, found: DEFAULT".to_string()
+        ),
+        parse_sql_statements(insert_with_columns_and_default_values).unwrap_err()
+    );
+
+    let insert_with_default_values_and_hive_after_columns =
+        "INSERT INTO test_table DEFAULT VALUES (some_column)";
+    assert_eq!(
+        ParserError::ParserError("Expected end of statement, found: (".to_string()),
+        parse_sql_statements(insert_with_default_values_and_hive_after_columns).unwrap_err()
+    );
+
+    let insert_with_default_values_and_hive_partition =
+        "INSERT INTO test_table DEFAULT VALUES PARTITION (some_column)";
+    assert_eq!(
+        ParserError::ParserError("Expected end of statement, found: PARTITION".to_string()),
+        parse_sql_statements(insert_with_default_values_and_hive_partition).unwrap_err()
+    );
+
+    let insert_with_default_values_and_values_list = "INSERT INTO test_table DEFAULT VALUES (1)";
+    assert_eq!(
+        ParserError::ParserError("Expected end of statement, found: (".to_string()),
+        parse_sql_statements(insert_with_default_values_and_values_list).unwrap_err()
+    );
 }
 
 #[test]
@@ -335,6 +384,7 @@ fn parse_update_set_from() {
                         offset: None,
                         fetch: None,
                         locks: vec![],
+                        for_clause: None,
                     }),
                     alias: Some(TableAlias {
                         name: Ident::new("t2"),
@@ -2446,7 +2496,7 @@ fn parse_create_table() {
                 vec![
                     ColumnDef {
                         name: "name".into(),
-                        data_type: DataType::Varchar(Some(CharacterLength {
+                        data_type: DataType::Varchar(Some(CharacterLength::IntegerLength {
                             length: 100,
                             unit: None,
                         })),
@@ -2821,6 +2871,7 @@ fn parse_create_table_as_table() {
         offset: None,
         fetch: None,
         locks: vec![],
+        for_clause: None,
     });
 
     match verified_stmt(sql1) {
@@ -2845,6 +2896,7 @@ fn parse_create_table_as_table() {
         offset: None,
         fetch: None,
         locks: vec![],
+        for_clause: None,
     });
 
     match verified_stmt(sql2) {
@@ -2994,7 +3046,7 @@ fn parse_create_external_table() {
                 vec![
                     ColumnDef {
                         name: "name".into(),
-                        data_type: DataType::Varchar(Some(CharacterLength {
+                        data_type: DataType::Varchar(Some(CharacterLength::IntegerLength {
                             length: 100,
                             unit: None,
                         })),
@@ -3065,7 +3117,7 @@ fn parse_create_or_replace_external_table() {
                 columns,
                 vec![ColumnDef {
                     name: "name".into(),
-                    data_type: DataType::Varchar(Some(CharacterLength {
+                    data_type: DataType::Varchar(Some(CharacterLength::IntegerLength {
                         length: 100,
                         unit: None,
                     })),
@@ -4147,6 +4199,7 @@ fn parse_interval_and_or_xor() {
         offset: None,
         fetch: None,
         locks: vec![],
+        for_clause: None,
     }))];
 
     assert_eq!(actual_ast, expected_ast);
@@ -6763,6 +6816,7 @@ fn parse_merge() {
                         offset: None,
                         fetch: None,
                         locks: vec![],
+                        for_clause: None,
                     }),
                     alias: Some(TableAlias {
                         name: Ident {
@@ -7901,6 +7955,29 @@ fn parse_create_type() {
             }
         },
         create_type
+    );
+}
+
+#[test]
+fn parse_call() {
+    all_dialects().verified_stmt("CALL my_procedure()");
+    all_dialects().verified_stmt("CALL my_procedure(1, 'a')");
+    pg_and_generic().verified_stmt("CALL my_procedure(1, 'a', $1)");
+    all_dialects().verified_stmt("CALL my_procedure");
+    assert_eq!(
+        verified_stmt("CALL my_procedure('a')"),
+        Statement::Call(Function {
+            args: vec![FunctionArg::Unnamed(FunctionArgExpr::Expr(Expr::Value(
+                Value::SingleQuotedString("a".to_string())
+            ))),],
+            name: ObjectName(vec![Ident::new("my_procedure")]),
+            filter: None,
+            null_treatment: None,
+            over: None,
+            distinct: false,
+            special: false,
+            order_by: vec![]
+        })
     );
 }
 
