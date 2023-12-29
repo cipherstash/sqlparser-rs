@@ -568,15 +568,20 @@ fn parse_alter_table_constraints_rename() {
 }
 
 #[test]
+<<<<<<< HEAD
 fn parse_alter_table_disable() {
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE ROW LEVEL SECURITY");
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE RULE rule_name");
+=======
+fn parse_alter_table_disable_trigger() {
+>>>>>>> ce01682 (Support for PG DISABLE)
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER ALL");
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER USER");
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER trigger_name");
 }
 
 #[test]
+<<<<<<< HEAD
 fn parse_alter_table_enable() {
     pg_and_generic().verified_stmt("ALTER TABLE tab ENABLE ALWAYS RULE rule_name");
     pg_and_generic().verified_stmt("ALTER TABLE tab ENABLE ALWAYS TRIGGER trigger_name");
@@ -606,6 +611,8 @@ fn parse_create_extension() {
 }
 
 #[test]
+=======
+>>>>>>> ce01682 (Support for PG DISABLE)
 fn parse_alter_table_alter_column() {
     pg().one_statement_parses_to(
         "ALTER TABLE tab ALTER COLUMN is_active TYPE TEXT USING 'text'",
