@@ -46,12 +46,12 @@ impl Dialect for RedshiftSqlDialect {
 
     fn is_identifier_start(&self, ch: char) -> bool {
         // Extends Postgres dialect with sharp
-        PostgreSqlDialect {}.is_identifier_start(ch) || ch == '#'
+        PostgreSqlDialect::default().is_identifier_start(ch) || ch == '#'
     }
 
     fn is_identifier_part(&self, ch: char) -> bool {
         // Extends Postgres dialect with sharp
-        PostgreSqlDialect {}.is_identifier_part(ch) || ch == '#'
+        PostgreSqlDialect::default().is_identifier_part(ch) || ch == '#'
     }
 
     /// redshift has `CONVERT(type, value)` instead of `CONVERT(value, type)`

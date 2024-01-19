@@ -197,7 +197,7 @@ pub fn all_dialects() -> TestedDialects {
     TestedDialects {
         dialects: vec![
             Box::new(GenericDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             Box::new(SnowflakeDialect {}),

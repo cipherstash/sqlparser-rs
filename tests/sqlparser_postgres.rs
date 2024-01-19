@@ -16,11 +16,13 @@
 
 #[macro_use]
 mod test_utils;
+use std::fmt;
+
 use test_utils::*;
 
 use sqlparser::ast::*;
 use sqlparser::dialect::{GenericDialect, PostgreSqlDialect};
-use sqlparser::parser::ParserError;
+use sqlparser::parser::{Parser, ParserError};
 
 #[test]
 fn parse_create_table_generated_always_as_identity() {
@@ -570,7 +572,6 @@ fn parse_alter_table_disable() {
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER ALL");
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER USER");
     pg_and_generic().verified_stmt("ALTER TABLE tab DISABLE TRIGGER trigger_name");
-
 }
 
 #[test]
@@ -2436,14 +2437,17 @@ fn parse_on_commit() {
 
 fn pg() -> TestedDialects {
     TestedDialects {
-        dialects: vec![Box::new(PostgreSqlDialect {})],
+        dialects: vec![Box::new(PostgreSqlDialect::default())],
         options: None,
     }
 }
 
 fn pg_and_generic() -> TestedDialects {
     TestedDialects {
-        dialects: vec![Box::new(PostgreSqlDialect {}), Box::new(GenericDialect {})],
+        dialects: vec![
+            Box::new(PostgreSqlDialect::default()),
+            Box::new(GenericDialect {}),
+        ],
         options: None,
     }
 }
@@ -3574,4 +3578,20 @@ fn parse_join_constraint_unnest_alias() {
             })),
         }]
     );
+}
+
+#[test]
+fn redact() {
+    let sql = "SELECT 1, vtha FROM blah WHERE vtha = 'vtha' and true";
+
+    let dialect = PostgreSqlDialect { redacted: true };
+
+    let ast = Parser::parse_sql(&dialect, sql).unwrap();
+
+    println!("AST: {ast:?}");
+
+    let a = &ast[0];
+
+    let s = &a.to_string();
+    println!("AST: {s}");
 }

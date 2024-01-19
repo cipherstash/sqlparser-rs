@@ -5323,6 +5323,11 @@ impl<'a> Parser<'a> {
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
         let next_token = self.next_token();
         let location = next_token.location;
+
+        if self.dialect.is_redacted() {
+            return Ok(Value::Redacted);
+        }
+
         match next_token.token {
             Token::Word(w) => match w.keyword {
                 Keyword::TRUE => Ok(Value::Boolean(true)),

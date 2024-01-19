@@ -173,6 +173,10 @@ pub trait Dialect: Debug + Any {
         // return None to fall back to the default behavior
         None
     }
+    /// Redacted is a no-op
+    fn is_redacted(&self) -> bool {
+        false
+    }
 }
 
 impl dyn Dialect {
@@ -191,7 +195,7 @@ pub fn dialect_from_str(dialect_name: impl AsRef<str>) -> Option<Box<dyn Dialect
     match dialect_name.to_lowercase().as_str() {
         "generic" => Some(Box::new(GenericDialect)),
         "mysql" => Some(Box::new(MySqlDialect {})),
-        "postgresql" | "postgres" => Some(Box::new(PostgreSqlDialect {})),
+        "postgresql" | "postgres" => Some(Box::new(PostgreSqlDialect::default())),
         "hive" => Some(Box::new(HiveDialect {})),
         "sqlite" => Some(Box::new(SQLiteDialect {})),
         "snowflake" => Some(Box::new(SnowflakeDialect)),

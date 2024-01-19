@@ -18,7 +18,21 @@ use crate::tokenizer::Token;
 
 /// A [`Dialect`] for [PostgreSQL](https://www.postgresql.org/)
 #[derive(Debug)]
-pub struct PostgreSqlDialect {}
+pub struct PostgreSqlDialect {
+    pub redacted: bool,
+}
+
+impl Default for PostgreSqlDialect {
+    fn default() -> Self {
+        Self { redacted: false }
+    }
+}
+
+impl PostgreSqlDialect {
+    fn redacted() -> Self {
+        Self { redacted: true }
+    }
+}
 
 impl Dialect for PostgreSqlDialect {
     fn is_identifier_start(&self, ch: char) -> bool {
@@ -46,6 +60,10 @@ impl Dialect for PostgreSqlDialect {
 
     fn supports_group_by_expr(&self) -> bool {
         true
+    }
+
+    fn is_redacted(&self) -> bool {
+        self.redacted
     }
 }
 

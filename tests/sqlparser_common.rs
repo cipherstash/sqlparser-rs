@@ -109,7 +109,7 @@ fn parse_insert_values() {
 
 #[test]
 fn parse_replace_into() {
-    let dialect = PostgreSqlDialect {};
+    let dialect = PostgreSqlDialect::default();
     let sql = "REPLACE INTO public.customer (id, name, active) VALUES (1, 2, 3)";
 
     assert_eq!(
@@ -158,7 +158,6 @@ fn parse_insert_default_values() {
             table_name,
             ..
         } => {
-
             assert_eq!(after_columns, vec![]);
             assert_eq!(columns, vec![]);
             assert_eq!(on, None);
@@ -317,7 +316,7 @@ fn parse_update_set_from() {
         dialects: vec![
             Box::new(GenericDialect {}),
             Box::new(DuckDbDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(BigQueryDialect {}),
             Box::new(SnowflakeDialect {}),
             Box::new(RedshiftSqlDialect {}),
@@ -1114,7 +1113,7 @@ fn parse_exponent_in_select() -> Result<(), ParserError> {
             // Box::new(HiveDialect {}),
             Box::new(MsSqlDialect {}),
             Box::new(MySqlDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(RedshiftSqlDialect {}),
             Box::new(SnowflakeDialect {}),
             Box::new(SQLiteDialect {}),
@@ -1323,7 +1322,10 @@ fn parse_mod() {
 
 fn pg_and_generic() -> TestedDialects {
     TestedDialects {
-        dialects: vec![Box::new(PostgreSqlDialect {}), Box::new(GenericDialect {})],
+        dialects: vec![
+            Box::new(PostgreSqlDialect::default()),
+            Box::new(GenericDialect {}),
+        ],
         options: None,
     }
 }
@@ -2371,7 +2373,7 @@ fn parse_array_agg_func() {
         dialects: vec![
             Box::new(GenericDialect {}),
             Box::new(DuckDbDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             Box::new(HiveDialect {}),
@@ -2395,7 +2397,7 @@ fn parse_agg_with_order_by() {
     let supported_dialects = TestedDialects {
         dialects: vec![
             Box::new(GenericDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             Box::new(HiveDialect {}),
@@ -2418,7 +2420,7 @@ fn parse_window_rank_function() {
     let supported_dialects = TestedDialects {
         dialects: vec![
             Box::new(GenericDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             Box::new(HiveDialect {}),
@@ -2640,7 +2642,7 @@ fn parse_create_table_hive_array() {
     // Parsing [] type arrays does not work in MsSql since [ is used in is_delimited_identifier_start
     for (dialects, angle_bracket_syntax) in [
         (
-            vec![Box::new(PostgreSqlDialect {}) as Box<dyn Dialect>],
+            vec![Box::new(PostgreSqlDialect::default()) as Box<dyn Dialect>],
             false,
         ),
         (
@@ -2706,7 +2708,7 @@ fn parse_create_table_hive_array() {
     // SnowflakeDialect using array different
     let dialects = TestedDialects {
         dialects: vec![
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(HiveDialect {}),
             Box::new(MySqlDialect {}),
         ],
@@ -3300,7 +3302,7 @@ fn parse_alter_table_add_column() {
 fn parse_alter_table_add_column_if_not_exists() {
     let dialects = TestedDialects {
         dialects: vec![
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(BigQueryDialect {}),
             Box::new(GenericDialect {}),
             Box::new(DuckDbDialect {}),
@@ -5357,7 +5359,7 @@ fn parse_substring() {
     let from_for_supported_dialects = TestedDialects {
         dialects: vec![
             Box::new(GenericDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(AnsiDialect {}),
             Box::new(SnowflakeDialect {}),
             Box::new(HiveDialect {}),
@@ -5463,7 +5465,7 @@ fn parse_trim() {
     let all_expected_snowflake = TestedDialects {
         dialects: vec![
             //Box::new(GenericDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             //Box::new(SnowflakeDialect {}),
@@ -7062,7 +7064,7 @@ fn test_placeholder() {
         dialects: vec![
             Box::new(GenericDialect {}),
             Box::new(DuckDbDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(AnsiDialect {}),
             Box::new(BigQueryDialect {}),
@@ -7889,7 +7891,7 @@ fn parse_non_latin_identifiers() {
         dialects: vec![
             Box::new(GenericDialect {}),
             Box::new(DuckDbDialect {}),
-            Box::new(PostgreSqlDialect {}),
+            Box::new(PostgreSqlDialect::default()),
             Box::new(MsSqlDialect {}),
             Box::new(RedshiftSqlDialect {}),
             Box::new(MySqlDialect {}),

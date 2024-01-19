@@ -65,6 +65,9 @@ pub enum Value {
     Placeholder(String),
     /// Add support of snowflake field:key - key should be a value
     UnQuotedString(String),
+
+    /// Redacted prevents the output of the value
+    Redacted,
 }
 
 impl fmt::Display for Value {
@@ -84,6 +87,7 @@ impl fmt::Display for Value {
             Value::Null => write!(f, "NULL"),
             Value::Placeholder(v) => write!(f, "{v}"),
             Value::UnQuotedString(v) => write!(f, "{v}"),
+            Value::Redacted => write!(f, "{}", "{REDACTED}"),
         }
     }
 }
