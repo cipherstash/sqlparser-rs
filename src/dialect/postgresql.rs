@@ -29,6 +29,7 @@ impl Default for PostgreSqlDialect {
 }
 
 impl PostgreSqlDialect {
+    #[allow(dead_code)]
     fn redacted() -> Self {
         Self { redacted: true }
     }
