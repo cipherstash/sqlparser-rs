@@ -2338,7 +2338,7 @@ impl<'a> Parser<'a> {
             }
             Token::BidirectionalArrow if dialect_of!(self is PostgreSqlDialect | GenericDialect) => {
                 Some(BinaryOperator::PGGeoDistance)
-            },
+            }
             Token::Tilde => Some(BinaryOperator::PGRegexMatch),
             Token::TildeAsterisk => Some(BinaryOperator::PGRegexIMatch),
             Token::ExclamationMarkTilde => Some(BinaryOperator::PGRegexNotMatch),
@@ -7573,7 +7573,6 @@ impl<'a> Parser<'a> {
             Token::LtEq => Some(BinaryOperator::LtEq),
             Token::Gt => Some(BinaryOperator::Gt),
             _ => None,
-
             // TODO: Handle all the other operators
             // Postgres needs it for ORDER BY x USING <op>
             // CREATE OPERATOR is also currently not supported
@@ -9288,7 +9287,9 @@ impl<'a> Parser<'a> {
             None
         };
 
-        let using = if dialect_of!(self is PostgreSqlDialect | GenericDialect) && self.parse_keyword(Keyword::USING) {
+        let using = if dialect_of!(self is PostgreSqlDialect | GenericDialect)
+            && self.parse_keyword(Keyword::USING)
+        {
             self.parse_operator()
         } else {
             None

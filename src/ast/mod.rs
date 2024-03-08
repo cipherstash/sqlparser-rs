@@ -176,9 +176,9 @@ pub struct ObjectName(pub Vec<Ident>);
 
 /// Quality of life assistance for devs writing tests.
 /// Useful when needing an object name and you want to just pass a string.
-/// 
+///
 /// ## Example
-/// 
+///
 /// ```
 /// use sqlparser::ast::ObjectName;
 /// let on: ObjectName = "foo.bar".into();
@@ -2814,7 +2814,7 @@ impl fmt::Display for Statement {
 
                 let table_names = table_names
                     .iter()
-                    .map(|table_name| table_name.to_string()) // replace `to_string()` with the appropriate method if necessary
+                    .map(|table_name| table_name.to_string())
                     .collect::<Vec<String>>()
                     .join(", ");
 
@@ -4335,7 +4335,9 @@ impl fmt::Display for Statement {
 }
 
 /// PostgreSQL identity option for TRUNCATE table
+/// ```sql
 /// [ RESTART IDENTITY | CONTINUE IDENTITY ]
+/// ```
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
@@ -4345,7 +4347,9 @@ pub enum TruncateIdentityOption {
 }
 
 /// PostgreSQL cascade option for TRUNCATE table
+/// ```sql
 /// [ CASCADE | RESTRICT ]
+/// ```
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "visitor", derive(Visit, VisitMut))]
