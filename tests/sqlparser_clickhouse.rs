@@ -428,6 +428,14 @@ fn parse_select_invalid_output_format() {
     )
 }
 
+#[test]
+fn parse_show_tables_with_format() {
+    clickhouse().all_verified_stmts([
+        "SHOW TABLES FORMAT JSON",
+        "SHOW TABLES WHERE name NOT LIKE '.inner_id.%' FORMAT JSONCompact",
+    ]);
+}
+
 fn clickhouse() -> TestedDialects {
     TestedDialects {
         dialects: vec![Box::new(ClickHouseDialect {})],

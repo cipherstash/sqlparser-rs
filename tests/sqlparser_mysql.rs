@@ -297,6 +297,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -306,6 +307,7 @@ fn parse_show_tables() {
             full: false,
             db_name: Some(Ident::new("mydb")),
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -315,6 +317,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -324,6 +327,7 @@ fn parse_show_tables() {
             full: true,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -333,6 +337,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: Some(ShowStatementFilter::Like("pattern".into())),
+            format: None,
         }
     );
     assert_eq!(
@@ -344,6 +349,7 @@ fn parse_show_tables() {
             filter: Some(ShowStatementFilter::Where(
                 mysql_and_generic().verified_expr("1 = 2")
             )),
+            format: None,
         }
     );
     mysql_and_generic().one_statement_parses_to("SHOW TABLES IN mydb", "SHOW TABLES FROM mydb");

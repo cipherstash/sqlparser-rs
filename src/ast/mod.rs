@@ -1934,12 +1934,14 @@ pub enum Statement {
     /// ```sql
     /// SHOW TABLES
     /// ```
-    /// Note: this is a MySQL-specific statement.
+    /// Note: this statement is specific to MySQL and Clickhouse.
     ShowTables {
         extended: bool,
         full: bool,
         db_name: Option<Ident>,
         filter: Option<ShowStatementFilter>,
+        /// Format specific to Clickhouse
+        format: Option<Format>,
     },
     /// ```sql
     /// SHOW COLLATION
@@ -3383,6 +3385,7 @@ impl fmt::Display for Statement {
                 full,
                 db_name,
                 filter,
+                format,
             } => {
                 write!(
                     f,
@@ -3395,6 +3398,9 @@ impl fmt::Display for Statement {
                 }
                 if let Some(filter) = filter {
                     write!(f, " {filter}")?;
+                }
+                if let Some(format) = format {
+                    write!(f, " FORMAT {format}")?;
                 }
                 Ok(())
             }
