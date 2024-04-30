@@ -297,6 +297,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -306,6 +307,7 @@ fn parse_show_tables() {
             full: false,
             db_name: Some(Ident::new("mydb")),
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -315,6 +317,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -324,6 +327,7 @@ fn parse_show_tables() {
             full: true,
             db_name: None,
             filter: None,
+            format: None,
         }
     );
     assert_eq!(
@@ -333,6 +337,7 @@ fn parse_show_tables() {
             full: false,
             db_name: None,
             filter: Some(ShowStatementFilter::Like("pattern".into())),
+            format: None,
         }
     );
     assert_eq!(
@@ -344,6 +349,7 @@ fn parse_show_tables() {
             filter: Some(ShowStatementFilter::Where(
                 mysql_and_generic().verified_expr("1 = 2")
             )),
+            format: None,
         }
     );
     mysql_and_generic().one_statement_parses_to("SHOW TABLES IN mydb", "SHOW TABLES FROM mydb");
@@ -754,6 +760,7 @@ fn parse_escaped_quote_identifiers_with_escape() {
             fetch: None,
             locks: vec![],
             for_clause: None,
+            format: None,
         }))
     );
 }
@@ -798,6 +805,7 @@ fn parse_escaped_quote_identifiers_with_no_escape() {
             fetch: None,
             locks: vec![],
             for_clause: None,
+            format: None,
         }))
     );
 }
@@ -839,6 +847,7 @@ fn parse_escaped_backticks_with_escape() {
             fetch: None,
             locks: vec![],
             for_clause: None,
+            format: None,
         }))
     );
 }
@@ -880,6 +889,7 @@ fn parse_escaped_backticks_with_no_escape() {
             fetch: None,
             locks: vec![],
             for_clause: None,
+            format: None,
         }))
     );
 }
@@ -1156,6 +1166,7 @@ fn parse_simple_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1198,6 +1209,7 @@ fn parse_ignore_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1240,6 +1252,7 @@ fn parse_priority_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1279,6 +1292,7 @@ fn parse_priority_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1322,6 +1336,7 @@ fn parse_replace_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1359,6 +1374,7 @@ fn parse_empty_row_insert() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1419,6 +1435,7 @@ fn parse_insert_with_on_duplicate_update() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 })),
                 source
             );
@@ -1811,6 +1828,7 @@ fn parse_substring_in_select() {
                     fetch: None,
                     locks: vec![],
                     for_clause: None,
+                    format: None,
                 }),
                 query
             );
@@ -2113,6 +2131,7 @@ fn parse_hex_string_introducer() {
             fetch: None,
             locks: vec![],
             for_clause: None,
+            format: None,
         }))
     )
 }

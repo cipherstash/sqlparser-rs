@@ -468,6 +468,12 @@ impl<'a> Parser<'a> {
             return statement;
         }
 
+        self.parse_statement_inner()
+    }
+
+    /// Inner parsing function to allow use by dialects
+    /// NOTE: An alternative to this would be to add a post_statement method on the Dialect trait
+    pub(crate) fn parse_statement_inner(&mut self) -> Result<Statement, ParserError> {
         let next_token = self.next_token();
         match &next_token.token {
             Token::Word(w) => match w.keyword {
@@ -6229,6 +6235,7 @@ impl<'a> Parser<'a> {
                 Ok(Statement::ExplainTable {
                     describe_alias,
                     table_name,
+                    format: None,
                 })
             }
         }
@@ -6262,6 +6269,7 @@ impl<'a> Parser<'a> {
                 fetch: None,
                 locks: vec![],
                 for_clause: None,
+                format: None,
             })
         } else if self.parse_keyword(Keyword::UPDATE) {
             let update = self.parse_update()?;
@@ -6275,6 +6283,7 @@ impl<'a> Parser<'a> {
                 fetch: None,
                 locks: vec![],
                 for_clause: None,
+                format: None,
             })
         } else {
             let body = Box::new(self.parse_query_body(0)?);
@@ -6347,6 +6356,7 @@ impl<'a> Parser<'a> {
                 fetch,
                 locks,
                 for_clause,
+                format: None,
             })
         }
     }
@@ -6993,6 +7003,7 @@ impl<'a> Parser<'a> {
             full,
             db_name,
             filter,
+            format: None,
         })
     }
 

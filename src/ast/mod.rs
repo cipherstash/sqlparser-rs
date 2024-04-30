@@ -37,7 +37,7 @@ pub use self::ddl::{
 };
 pub use self::operator::{BinaryOperator, UnaryOperator};
 pub use self::query::{
-    Cte, Distinct, ExceptSelectItem, ExcludeSelectItem, Fetch, ForClause, ForJson, ForXml,
+    Cte, Distinct, ExceptSelectItem, ExcludeSelectItem, Fetch, ForClause, ForJson, Format, ForXml,
     GroupByExpr, IdentWithAlias, Join, JoinConstraint, JoinOperator, JsonTableColumn,
     JsonTableColumnErrorHandling, LateralView, LockClause, LockType, NamedWindowDefinition,
     NonBlock, Offset, OffsetRows, OrderByExpr, Query, RenameSelectItem, ReplaceSelectElement,
@@ -1934,12 +1934,14 @@ pub enum Statement {
     /// ```sql
     /// SHOW TABLES
     /// ```
-    /// Note: this is a MySQL-specific statement.
+    /// Note: this statement is specific to MySQL and Clickhouse.
     ShowTables {
         extended: bool,
         full: bool,
         db_name: Option<Ident>,
         filter: Option<ShowStatementFilter>,
+        /// Format specific to Clickhouse
+        format: Option<Format>,
     },
     /// ```sql
     /// SHOW COLLATION
@@ -2133,13 +2135,17 @@ pub enum Statement {
     /// ```sql
     /// EXPLAIN TABLE
     /// ```
-    /// Note: this is a MySQL-specific statement. See <https://dev.mysql.com/doc/refman/8.0/en/explain.html>
+    /// Note: this is specific to MySQL and Clockhouse.
+    /// See <https://dev.mysql.com/doc/refman/8.0/en/explain.html>
+    /// and <https://clickhouse.com/docs/en/sql-reference/statements/describe-table>
     ExplainTable {
         /// If true, query used the MySQL `DESCRIBE` alias for explain
         describe_alias: bool,
         /// Table name
         #[cfg_attr(feature = "visitor", visit(with = "visit_relation"))]
         table_name: ObjectName,
+        /// Clickhouse-specific format
+        format: Option<Format>,
     },
     /// ```sql
     /// [EXPLAIN | DESCRIBE <select statement>
@@ -2297,6 +2303,7 @@ impl fmt::Display for Statement {
             Statement::ExplainTable {
                 describe_alias,
                 table_name,
+                format,
             } => {
                 if *describe_alias {
                     write!(f, "DESCRIBE ")?;
@@ -2304,7 +2311,13 @@ impl fmt::Display for Statement {
                     write!(f, "EXPLAIN ")?;
                 }
 
-                write!(f, "{table_name}")
+                write!(f, "{table_name}")?;
+
+                if let Some(format) = format {
+                    write!(f, " FORMAT {format}")?;
+                }
+
+                Ok(())
             }
             Statement::Explain {
                 describe_alias,
@@ -3383,6 +3396,7 @@ impl fmt::Display for Statement {
                 full,
                 db_name,
                 filter,
+                format,
             } => {
                 write!(
                     f,
@@ -3395,6 +3409,9 @@ impl fmt::Display for Statement {
                 }
                 if let Some(filter) = filter {
                     write!(f, " {filter}")?;
+                }
+                if let Some(format) = format {
+                    write!(f, " FORMAT {format}")?;
                 }
                 Ok(())
             }
