@@ -6235,6 +6235,7 @@ impl<'a> Parser<'a> {
                 Ok(Statement::ExplainTable {
                     describe_alias,
                     table_name,
+                    format: None,
                 })
             }
         }

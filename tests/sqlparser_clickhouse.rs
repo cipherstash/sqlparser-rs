@@ -436,6 +436,13 @@ fn parse_show_tables_with_format() {
     ]);
 }
 
+#[test]
+fn parse_describe_table_with_format() {
+    clickhouse().all_verified_stmts([
+        "DESCRIBE TABLE patients",// FORMAT JSONCompact",
+    ]);
+}
+
 fn clickhouse() -> TestedDialects {
     TestedDialects {
         dialects: vec![Box::new(ClickHouseDialect {})],

@@ -55,6 +55,11 @@ fn set_format(statement: Statement, target: Format) -> Statement {
             db_name,
             extended,
         },
+        Statement::ExplainTable { format: _, describe_alias, table_name } => Statement::ExplainTable {
+            describe_alias,
+            table_name,
+            format: Some(target),
+        },
         _ => statement,
     }
 }

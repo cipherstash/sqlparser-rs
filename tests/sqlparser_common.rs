@@ -3594,6 +3594,7 @@ fn parse_explain_table() {
         Statement::ExplainTable {
             describe_alias,
             table_name,
+            format: _,
         } => {
             assert_eq!(describe_alias, expected_describe_alias);
             assert_eq!("test_identifier", table_name.to_string());
