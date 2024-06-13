@@ -13,12 +13,12 @@
 #[macro_use]
 mod test_utils;
 
-use sqlparser::ast;
+use sqlparser42::ast;
 use std::ops::Deref;
 
-use sqlparser::ast::*;
-use sqlparser::dialect::{BigQueryDialect, GenericDialect};
-use sqlparser::parser::ParserError;
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{BigQueryDialect, GenericDialect};
+use sqlparser42::parser::ParserError;
 use test_utils::*;
 
 #[test]

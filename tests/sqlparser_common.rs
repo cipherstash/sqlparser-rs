@@ -21,16 +21,16 @@
 extern crate core;
 
 use matches::assert_matches;
-use sqlparser::ast::SelectItem::UnnamedExpr;
-use sqlparser::ast::TableFactor::{Pivot, Unpivot};
-use sqlparser::ast::*;
-use sqlparser::dialect::{
+use sqlparser42::ast::SelectItem::UnnamedExpr;
+use sqlparser42::ast::TableFactor::{Pivot, Unpivot};
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{
     AnsiDialect, BigQueryDialect, ClickHouseDialect, Dialect, DuckDbDialect, GenericDialect,
     HiveDialect, MsSqlDialect, MySqlDialect, PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect,
     SnowflakeDialect,
 };
-use sqlparser::keywords::ALL_KEYWORDS;
-use sqlparser::parser::{Parser, ParserError, ParserOptions};
+use sqlparser42::keywords::ALL_KEYWORDS;
+use sqlparser42::parser::{Parser, ParserError, ParserOptions};
 use test_utils::{
     all_dialects, alter_table_op, assert_eq_vec, expr_from_projection, join, number, only, table,
     table_alias, TestedDialects,
@@ -158,7 +158,6 @@ fn parse_insert_default_values() {
             table_name,
             ..
         } => {
-
             assert_eq!(after_columns, vec![]);
             assert_eq!(columns, vec![]);
             assert_eq!(on, None);

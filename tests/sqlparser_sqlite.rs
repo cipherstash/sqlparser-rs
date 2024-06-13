@@ -19,11 +19,11 @@ mod test_utils;
 
 use test_utils::*;
 
-use sqlparser::ast::SelectItem::UnnamedExpr;
-use sqlparser::ast::*;
-use sqlparser::dialect::{GenericDialect, SQLiteDialect};
-use sqlparser::parser::{ParserError, ParserOptions};
-use sqlparser::tokenizer::Token;
+use sqlparser42::ast::SelectItem::UnnamedExpr;
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{GenericDialect, SQLiteDialect};
+use sqlparser42::parser::{ParserError, ParserOptions};
+use sqlparser42::tokenizer::Token;
 
 #[test]
 fn pragma_no_value() {

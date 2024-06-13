@@ -18,14 +18,14 @@ mod test_utils;
 
 use test_utils::*;
 
-use sqlparser::ast::Expr::{BinaryOp, Identifier, MapAccess};
-use sqlparser::ast::Ident;
-use sqlparser::ast::SelectItem::UnnamedExpr;
-use sqlparser::ast::TableFactor::Table;
-use sqlparser::ast::*;
+use sqlparser42::ast::Expr::{BinaryOp, Identifier, MapAccess};
+use sqlparser42::ast::Ident;
+use sqlparser42::ast::SelectItem::UnnamedExpr;
+use sqlparser42::ast::TableFactor::Table;
+use sqlparser42::ast::*;
 
-use sqlparser::dialect::ClickHouseDialect;
-use sqlparser::dialect::GenericDialect;
+use sqlparser42::dialect::ClickHouseDialect;
+use sqlparser42::dialect::GenericDialect;
 
 #[test]
 fn parse_map_access_expr() {

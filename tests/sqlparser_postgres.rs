@@ -18,9 +18,9 @@
 mod test_utils;
 use test_utils::*;
 
-use sqlparser::ast::*;
-use sqlparser::dialect::{GenericDialect, PostgreSqlDialect};
-use sqlparser::parser::ParserError;
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{GenericDialect, PostgreSqlDialect};
+use sqlparser42::parser::ParserError;
 
 #[test]
 fn parse_create_table_generated_always_as_identity() {
@@ -1883,7 +1883,7 @@ fn parse_array_index_expr() {
     let sql = "SELECT ARRAY[]";
     let select = pg_and_generic().verified_only_select(sql);
     assert_eq!(
-        &Expr::Array(sqlparser::ast::Array {
+        &Expr::Array(Array {
             elem: vec![],
             named: true
         }),
@@ -3752,5 +3752,29 @@ fn parse_query_with_biderectional_arrow() {
             using: None,
         }],
         select.order_by
+    );
+}
+
+#[test]
+fn parse_cast_text_array() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT ARRAY ['vtha']::TEXT[];",
+        "SELECT CAST(ARRAY['vtha'] AS TEXT[])",
+    );
+}
+
+#[test]
+fn parse_cast_compare_text_array() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT * FROM users WHERE roles && ARRAY ['vtha']::TEXT[];",
+        "SELECT * FROM users WHERE roles && CAST(ARRAY['vtha'] AS TEXT[])",
+    );
+}
+
+#[test]
+fn parse_cast_basic() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT '100'::integer",
+        "SELECT CAST('100' AS INTEGER)",
     );
 }

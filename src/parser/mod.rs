@@ -2660,7 +2660,6 @@ impl<'a> Parser<'a> {
             Token::Mul | Token::Div | Token::DuckIntDiv | Token::Mod | Token::StringConcat => {
                 Ok(Self::MUL_DIV_MOD_OP_PREC)
             }
-            Token::DoubleColon => Ok(50),
             Token::Colon => Ok(50),
             Token::ExclamationMark => Ok(50),
             Token::LBracket
@@ -2674,6 +2673,7 @@ impl<'a> Parser<'a> {
             | Token::HashMinus
             | Token::AtQuestion
             | Token::AtAt => Ok(50),
+            Token::DoubleColon => Ok(51),
             _ => Ok(0),
         }
     }

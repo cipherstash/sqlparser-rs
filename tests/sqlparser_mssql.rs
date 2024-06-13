@@ -18,8 +18,8 @@
 mod test_utils;
 use test_utils::*;
 
-use sqlparser::ast::*;
-use sqlparser::dialect::{GenericDialect, MsSqlDialect};
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{GenericDialect, MsSqlDialect};
 
 #[test]
 fn parse_mssql_identifiers() {
