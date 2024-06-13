@@ -206,7 +206,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sqlparser"
+name = "sqlparser45"
 version = "0.45.0"
 dependencies = [
  "bigdecimal",

@@ -1,5 +1,5 @@
 [package]
-name = "sqlparser"
+name = "sqlparser45"
 description = "Extensible SQL Lexer and Parser with support for ANSI SQL:2011"
 version = "0.45.0"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
