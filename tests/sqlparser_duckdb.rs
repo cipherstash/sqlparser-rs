@@ -15,8 +15,8 @@ mod test_utils;
 
 use test_utils::*;
 
-use sqlparser::ast::*;
-use sqlparser::dialect::{DuckDbDialect, GenericDialect};
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{DuckDbDialect, GenericDialect};
 
 fn duckdb() -> TestedDialects {
     TestedDialects {

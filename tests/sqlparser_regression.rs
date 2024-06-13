@@ -12,8 +12,8 @@
 
 #![warn(clippy::all)]
 
-use sqlparser::dialect::GenericDialect;
-use sqlparser::parser::Parser;
+use sqlparser42::dialect::GenericDialect;
+use sqlparser42::parser::Parser;
 
 macro_rules! tpch_tests {
     ($($name:ident: $value:expr,)*) => {

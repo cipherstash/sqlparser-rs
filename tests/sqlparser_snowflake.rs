@@ -14,13 +14,13 @@
 //! Test SQL syntax specific to Snowflake. The parser based on the
 //! generic dialect is also tested (on the inputs it can handle).
 
-use sqlparser::ast::helpers::stmt_data_loading::{
+use sqlparser42::ast::helpers::stmt_data_loading::{
     DataLoadingOption, DataLoadingOptionType, StageLoadSelectItem,
 };
-use sqlparser::ast::*;
-use sqlparser::dialect::{GenericDialect, SnowflakeDialect};
-use sqlparser::parser::ParserError;
-use sqlparser::tokenizer::*;
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{GenericDialect, SnowflakeDialect};
+use sqlparser42::parser::ParserError;
+use sqlparser42::tokenizer::*;
 use test_utils::*;
 
 #[macro_use]

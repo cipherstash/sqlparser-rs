@@ -15,13 +15,13 @@
 //! is also tested (on the inputs it can handle).
 
 use matches::assert_matches;
-use sqlparser::ast::Expr;
-use sqlparser::ast::MysqlInsertPriority::{Delayed, HighPriority, LowPriority};
-use sqlparser::ast::Value;
-use sqlparser::ast::*;
-use sqlparser::dialect::{GenericDialect, MySqlDialect};
-use sqlparser::parser::ParserOptions;
-use sqlparser::tokenizer::Token;
+use sqlparser42::ast::Expr;
+use sqlparser42::ast::MysqlInsertPriority::{Delayed, HighPriority, LowPriority};
+use sqlparser42::ast::Value;
+use sqlparser42::ast::*;
+use sqlparser42::dialect::{GenericDialect, MySqlDialect};
+use sqlparser42::parser::ParserOptions;
+use sqlparser42::tokenizer::Token;
 use test_utils::*;
 
 #[macro_use]
