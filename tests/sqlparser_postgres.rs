@@ -3754,3 +3754,27 @@ fn parse_query_with_biderectional_arrow() {
         select.order_by
     );
 }
+
+#[test]
+fn parse_cast_text_array() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT ARRAY ['vtha']::TEXT[];",
+        "SELECT CAST(ARRAY['vtha'] AS TEXT[])",
+    );
+}
+
+#[test]
+fn parse_cast_compare_text_array() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT * FROM users WHERE roles && ARRAY ['vtha']::TEXT[];",
+        "SELECT * FROM users WHERE roles && CAST(ARRAY['vtha'] AS TEXT[])",
+    );
+}
+
+#[test]
+fn parse_cast_basic() {
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT '100'::integer",
+        "SELECT CAST('100' AS INTEGER)",
+    );
+}
