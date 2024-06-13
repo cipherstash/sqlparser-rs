@@ -3769,6 +3769,10 @@ fn parse_cast_compare_text_array() {
         "SELECT * FROM users WHERE roles && ARRAY ['vtha']::TEXT[];",
         "SELECT * FROM users WHERE roles && CAST(ARRAY['vtha'] AS TEXT[])",
     );
+    pg_and_generic().verified_only_select_with_canonical(
+        "SELECT * FROM users WHERE ARRAY['blah'] && ARRAY['vtha']::TEXT[];",
+        "SELECT * FROM users WHERE ARRAY['blah'] && CAST(ARRAY['vtha'] AS TEXT[])",
+    );
 }
 
 #[test]
