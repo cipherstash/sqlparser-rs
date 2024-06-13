@@ -3873,3 +3873,10 @@ fn parse_query_with_biderectional_arrow() {
         select.order_by
     );
 }
+
+#[test]
+fn parse_with_casting() {
+    pg_and_generic().verified_query("SELECT '100'::INTEGER");
+    pg_and_generic().verified_query("SELECT ARRAY['vtha']::TEXT[]");
+    pg_and_generic().verified_query("SELECT * FROM users WHERE roles && ARRAY['vtha']::TEXT[]");
+}
