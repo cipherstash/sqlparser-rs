@@ -4524,6 +4524,14 @@ fn parse_query_with_biderectional_arrow() {
 }
 
 #[test]
+fn parse_cast_compare_text_array() {
+    pg().verified_only_select_with_canonical(
+        "SELECT * FROM users WHERE roles && ARRAY['vtha']::TEXT[]",
+        "SELECT * FROM users WHERE roles && ARRAY['vtha']::TEXT[]",
+    );
+}
+
+#[test]
 fn parse_at_time_zone() {
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE tz");
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE ('America/' || 'Los_Angeles')");
