@@ -8715,6 +8715,20 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    /// Not an exhaustive list of valid operators
+    /// TODO: Handle all operators
+    pub fn parse_operator(&mut self) -> Option<BinaryOperator> {
+        let token = self.next_token();
+        match token.token {
+            Token::Eq => Some(BinaryOperator::Eq),
+            Token::Neq => Some(BinaryOperator::NotEq),
+            Token::Lt => Some(BinaryOperator::Lt),
+            Token::LtEq => Some(BinaryOperator::LtEq),
+            Token::Gt => Some(BinaryOperator::Gt),
+            _ => None,
+        }
+    }
+
     pub fn parse_set_operator(&mut self, token: &Token) -> Option<SetOperator> {
         match token {
             Token::Word(w) if w.keyword == Keyword::UNION => Some(SetOperator::Union),
@@ -10947,6 +10961,14 @@ impl<'a> Parser<'a> {
             None
         };
 
+        let using = if dialect_of!(self is PostgreSqlDialect | GenericDialect)
+            && self.parse_keyword(Keyword::USING)
+        {
+            self.parse_operator()
+        } else {
+            None
+        };
+
         let nulls_first = if self.parse_keywords(&[Keyword::NULLS, Keyword::FIRST]) {
             Some(true)
         } else if self.parse_keywords(&[Keyword::NULLS, Keyword::LAST]) {
@@ -10967,6 +10989,7 @@ impl<'a> Parser<'a> {
             expr,
             asc,
             nulls_first,
+            using,
             with_fill,
         })
     }

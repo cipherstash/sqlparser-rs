@@ -4416,6 +4416,83 @@ fn parse_mat_cte() {
 }
 
 #[test]
+fn parse_select_order_by_using() {
+    let select = pg().verified_query("SELECT name, email FROM users ORDER BY name USING >");
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::Identifier(Ident::new("name")),
+            asc: None,
+            nulls_first: None,
+            using: Some(BinaryOperator::Gt),
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
+fn parse_select_order_by_asc() {
+    let select = pg().verified_query("SELECT name, email FROM users ORDER BY name ASC");
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::Identifier(Ident::new("name")),
+            asc: Some(true),
+            nulls_first: None,
+            using: None,
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
+fn parse_select_order_by_desc() {
+    let select = pg().verified_query("SELECT name, email FROM users ORDER BY name DESC");
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::Identifier(Ident::new("name")),
+            asc: Some(false),
+            nulls_first: None,
+            using: None,
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
+fn parse_select_order_by_desc_nulls_first() {
+    let select =
+        pg().verified_query("SELECT name, email FROM users ORDER BY name DESC NULLS FIRST");
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::Identifier(Ident::new("name")),
+            asc: Some(false),
+            nulls_first: Some(true),
+            using: None,
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
+fn parse_select_order_by_using_nulls_last() {
+    let select =
+        pg().verified_query("SELECT name, email FROM users ORDER BY name USING < NULLS LAST");
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::Identifier(Ident::new("name")),
+            asc: None,
+            nulls_first: Some(false),
+            using: Some(BinaryOperator::Lt),
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
 fn parse_at_time_zone() {
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE tz");
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE ('America/' || 'Los_Angeles')");
