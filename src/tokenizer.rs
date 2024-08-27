@@ -224,6 +224,8 @@ pub enum Token {
     /// for the specified JSON value. Only the first item of the result is taken into
     /// account. If the result is not Boolean, then NULL is returned.
     AtAt,
+    /// Bidirectional arrow <->; Postgres distance operator
+    BidirectionalArrow,
     /// jsonb ? text -> boolean: Checks whether the string exists as a top-level key within the
     /// jsonb object
     Question,
@@ -324,6 +326,7 @@ impl fmt::Display for Token {
             Token::HashMinus => write!(f, "#-"),
             Token::AtQuestion => write!(f, "@?"),
             Token::AtAt => write!(f, "@@"),
+            Token::BidirectionalArrow => write!(f, "<->"),
             Token::Question => write!(f, "?"),
             Token::QuestionAnd => write!(f, "?&"),
             Token::QuestionPipe => write!(f, "?|"),
@@ -1053,6 +1056,7 @@ impl<'a> Tokenizer<'a> {
                         _ => Ok(Some(Token::Eq)),
                     }
                 }
+
                 '!' => {
                     chars.next(); // consume
                     match chars.peek() {
@@ -1087,6 +1091,18 @@ impl<'a> Tokenizer<'a> {
                             match chars.peek() {
                                 Some('>') => self.consume_for_binop(chars, "<=>", Token::Spaceship),
                                 _ => self.start_binop(chars, "<=", Token::LtEq),
+                            }
+                        }
+                        // Handle PostgreSQL's '<->' operator
+                        Some('-') if dialect_of!(self is PostgreSqlDialect | GenericDialect) => {
+                            chars.next();
+                            match chars.peek() {
+                                Some('>') => {
+                                    self.consume_and_return(chars, Token::BidirectionalArrow)
+                                }
+                                _ => {
+                                    self.tokenizer_error(chars.location(), "Expected '>' after '-'")
+                                }
                             }
                         }
                         Some('>') => self.consume_for_binop(chars, "<>", Token::Neq),
@@ -2313,6 +2329,25 @@ mod tests {
                 }
             })
         );
+    }
+
+    #[test]
+    fn tokenize_biderectional_arrow() {
+        let sql = "SELECT a <-> b";
+        let dialect = GenericDialect {};
+        let tokens = Tokenizer::new(&dialect, sql)
+            .tokenize_with_location()
+            .unwrap();
+        let expected = vec![
+            TokenWithLocation::new(Token::make_keyword("SELECT"), 1, 1),
+            TokenWithLocation::new(Token::Whitespace(Whitespace::Space), 1, 7),
+            TokenWithLocation::new(Token::make_word("a", None), 1, 8),
+            TokenWithLocation::new(Token::Whitespace(Whitespace::Space), 1, 9),
+            TokenWithLocation::new(Token::BidirectionalArrow, 1, 10),
+            TokenWithLocation::new(Token::Whitespace(Whitespace::Space), 1, 13),
+            TokenWithLocation::new(Token::make_word("b", None), 1, 14),
+        ];
+        compare(expected, tokens);
     }
 
     #[test]

@@ -4493,6 +4493,37 @@ fn parse_select_order_by_using_nulls_last() {
 }
 
 #[test]
+fn parse_select_with_biderectional_arrow() {
+    pg_and_generic().verified_query("SELECT location <-> '(101,456)'::point");
+}
+
+#[test]
+fn parse_query_with_biderectional_arrow() {
+    let select: Query = pg_and_generic()
+        .verified_query("SELECT name, email FROM users ORDER BY location <-> '(101,456)'::point");
+
+    assert_eq!(
+        vec![OrderByExpr {
+            expr: Expr::BinaryOp {
+                left: Box::new(Expr::Identifier(Ident::new("location"))),
+                op: BinaryOperator::PGGeoDistance,
+                right: Box::new(Expr::Cast {
+                    expr: Box::new(Expr::Value(Value::SingleQuotedString("(101,456)".into()))),
+                    data_type: DataType::new_custom("point", vec![]),
+                    format: None,
+                    kind: CastKind::DoubleColon,
+                }),
+            },
+            asc: None,
+            nulls_first: None,
+            using: None,
+            with_fill: None,
+        }],
+        select.order_by.unwrap().exprs
+    );
+}
+
+#[test]
 fn parse_at_time_zone() {
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE tz");
     pg_and_generic().verified_expr("CURRENT_TIMESTAMP AT TIME ZONE ('America/' || 'Los_Angeles')");

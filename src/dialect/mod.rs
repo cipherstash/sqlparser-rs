@@ -421,6 +421,7 @@ pub trait Dialect: Debug + Any {
             | Token::DoubleTildeAsterisk
             | Token::ExclamationMarkDoubleTilde
             | Token::ExclamationMarkDoubleTildeAsterisk
+            | Token::BidirectionalArrow
             | Token::Spaceship => Ok(p!(Eq)),
             Token::Pipe => Ok(p!(Pipe)),
             Token::Caret | Token::Sharp | Token::ShiftRight | Token::ShiftLeft => Ok(p!(Caret)),
