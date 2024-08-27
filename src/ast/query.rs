@@ -1777,6 +1777,9 @@ impl fmt::Display for OrderByExpr {
             Some(false) => write!(f, " DESC")?,
             None => (),
         }
+        if let Some(ref operator) = self.using {
+            write!(f, " USING {}", operator)?;
+        }
         match self.nulls_first {
             Some(true) => write!(f, " NULLS FIRST")?,
             Some(false) => write!(f, " NULLS LAST")?,
